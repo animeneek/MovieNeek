@@ -1,4 +1,4 @@
-const apiKey = 'e3afd4c89e3351edad9e875ff7a01f0c';
+const apiKey = 'API';
 const imagePlaceholder = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0XyKGX9nAiX03Elxmng_nAjDqAP2dkTOmss79ZfTUyJiZtEBheTPEKepCBBFTMLUQrdmhFaqOw6381J61SBV1GrBov1vtaZmJay5mZ_QNbs5BAePbR86cH5Gtvs2qxe8d55_5Ft0vNapAR5q9dpf8jSTpQv8IQV-sK7Xn1vDQ9RKSiSjrKH_pnq7NsnY/s4608/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
 
 let currentPage = 1;
