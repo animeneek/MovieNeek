@@ -91,3 +91,21 @@ function displayResults(results) {
     });
 }
 
+async function fetchGenres(genreIds) {
+    const response = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}&language=en-US`);
+    const data = await response.json();
+    const genres = data.genres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name);
+    return genres.join(', ');
+}
+
+async function populateSeasons(tvId) {
+    // Function to populate season dropdowns
+}
+
+function playEpisode(url) {
+    window.open(url, '_blank');
+}
+
+function changeSource(url) {
+    document.querySelector('iframe').src = url;
+}
