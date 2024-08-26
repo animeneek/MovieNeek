@@ -71,3 +71,23 @@ async function searchMovies() {
         isLoading = false;
     }
 }
+
+function displayResults(results) {
+    const resultsContainer = document.getElementById('results');
+    results.forEach(result => {
+        const item = document.createElement('div');
+        item.classList.add('result-item');
+        item.innerHTML = `
+            <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
+            <div class="result-title">${result.title || result.name}</div>
+        `;
+        item.addEventListener('click', () => openModal(result));
+        resultsContainer.appendChild(item);
+    });
+
+    // Show "Scroll to Top" button if not at the top
+    window.addEventListener('scroll', () => {
+        document.getElementById('scrollToTop').style.display = window.scrollY > 200 ? 'block' : 'none';
+    });
+}
+
