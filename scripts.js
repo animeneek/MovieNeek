@@ -142,19 +142,9 @@ async function openModal(result) {
     // Fetch additional sources based on the result ID
     const additionalSources = getAdditionalSources(result.id, type);
 
-    // Define iframe with proper styles
-    const iframe = document.createElement('iframe');
-    iframe.src = type === 'movie'
-        ? `https://vidsrc.pro/embed/movie/${result.id}`
-        : `https://vidsrc.pro/embed/tv/${result.id}/1/1`;
-    iframe.frameBorder = '0';
-    iframe.width = '100%';
-    iframe.height = '315';
-    iframe.style.position = 'inherit'; // Apply the style you need
-
     if (type === 'movie') {
         content = `
-            ${iframe.outerHTML}
+            <iframe style="position: inherit !important;" src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315"></iframe>
             <div class="sources">
                 <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
                 <button onclick="changeSource('https://vidsrc.me/embed/movie?tmdb=${result.id}')">Source 2</button>
@@ -174,7 +164,7 @@ async function openModal(result) {
         `;
     } else if (type === 'tv') {
         content = `
-            ${iframe.outerHTML}
+            <iframe style="position: inherit !important;" src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315"></iframe>
             <div class="season-episode">
                 <div>
                     <label for="season1">Source 1:</label>
@@ -220,7 +210,6 @@ async function openModal(result) {
         await populateSeasons(result.id, 'season2');
     }
 }
-
 
 function getAdditionalSources(id, type) {
     const dataContainer = document.querySelector('#movie-data');
