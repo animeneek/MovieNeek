@@ -203,11 +203,13 @@ async function openModal(result) {
 
     modalBody.innerHTML = content;
 
+    // Populate season and episode dropdowns for series
     if (type === 'tv') {
         await populateSeasons(result.id, 'season1');
         await populateSeasons(result.id, 'season2');
     }
 }
+
 
 
 function getAdditionalSources(id, type) {
