@@ -1,5 +1,3 @@
-const apiKey = 'e3afd4c89e3351edad9e875ff7a01f0c';
-const imagePlaceholder = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0XyKGX9nAiX03Elxmng_nAjDqAP2dkTOmss79ZfTUyJiZtEBheTPEKepCBBFTMLUQrdmhFaqOw6381J61SBV1GrBov1vtaZmJay5mZ_QNbs5BAePbR86cH5Gtvs2qxe8d55_5Ft0vNapAR5q9dpf8jSTpQv8IQV-sK7Xn1vDQ9RKSiSjrKH_pnq7NsnY/s4608/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
 
 let currentPage = 1;
 let totalPages = 1;
@@ -131,7 +129,85 @@ function displayResults(results) {
     });
 }
 
+async function openModal(result) {
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modal-body');
+    modal.style.display = 'block';
 
+    const type = result.media_type || (result.title ? 'movie' : 'tv');
+    let content = '';
+
+    // Fetch additional sources based on the result ID
+    const additionalSources = getAdditionalSources(result.id, type);
+
+    if (type === 'movie') {
+        content = `
+            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315" style="position:inherit;"></iframe>
+            <div class="sources">
+                <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
+                <button onclick="changeSource('https://vidsrc.me/embed/movie?tmdb=${result.id}')">Source 2</button>
+                ${additionalSources}
+            </div>
+            <div class="details">
+                <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
+                <div class="info">
+                    <h2>${result.title || result.name}</h2>
+                    <p><strong>Original Title:</strong> ${result.original_title || result.original_name}</p>
+                    <p><strong>Type:</strong> Movie</p>
+                    <p><strong>Rating:</strong> ${result.vote_average}</p>
+                    <p><strong>Genre:</strong> ${await fetchGenres(result.genre_ids)}</p>
+                    <p><strong>Synopsis:</strong> ${result.overview}</p>
+                </div>
+            </div>
+        `;
+    } else if (type === 'tv') {
+        content = `
+            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315" style="position:inherit;"></iframe>
+            <div class="season-episode">
+                <div>
+                    <label for="season1">Source 1:</label>
+                    <select id="season1" class="dropdown">
+                        <!-- Seasons will be populated here -->
+                    </select>
+                    <select id="episode1" class="dropdown">
+                        <!-- Episodes will be populated here -->
+                    </select>
+                    <button onclick="playEpisode('https://vidsrc.pro/embed/tv/${result.id}/' + document.getElementById('season1').value + '/' + document.getElementById('episode1').value)">Play</button>
+                </div>
+                <div>
+                    <label for="season2">Source 2:</label>
+                    <select id="season2" class="dropdown">
+                        <!-- Seasons will be populated here -->
+                    </select>
+                    <select id="episode2" class="dropdown">
+                        <!-- Episodes will be populated here -->
+                    </select>
+                    <button onclick="playEpisode('https://vidsrc.me/embed/tv?tmdb=${result.id}&season=' + document.getElementById('season2').value + '&episode=' + document.getElementById('episode2').value)">Play</button>
+                </div>
+                ${additionalSources}
+            </div>
+            <div class="details">
+                <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
+                <div class="info">
+                    <h2>${result.title || result.name}</h2>
+                    <p><strong>Original Title:</strong> ${result.original_title || result.original_name}</p>
+                    <p><strong>Type:</strong> Series</p>
+                    <p><strong>Rating:</strong> ${result.vote_average}</p>
+                    <p><strong>Genre:</strong> ${await fetchGenres(result.genre_ids)}</p>
+                    <p><strong>Synopsis:</strong> ${result.overview}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    modalBody.innerHTML = content;
+
+    // Populate season and episode dropdowns for series
+    if (type === 'tv') {
+        await populateSeasons(result.id, 'season1');
+        await populateSeasons(result.id, 'season2');
+    }
+}
 
 function getAdditionalSources(id, type) {
     const dataContainer = document.querySelector('#movie-data');
