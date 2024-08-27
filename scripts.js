@@ -366,3 +366,10 @@ window.addEventListener('scroll', () => {
         searchMovies();
     }
 });
+
+window.addEventListener('load', function() {
+    document.querySelectorAll('iframe').forEach(function(iframe) {
+        iframe.style.position = 'inherit';
+        iframe.style.setProperty('position', 'inherit', 'important');
+    });
+});
