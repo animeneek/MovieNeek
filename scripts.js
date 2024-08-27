@@ -5,9 +5,6 @@ let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
 
-document.querySelector('#modal-body iframe').style.position = 'inherit';
-document.querySelector('#modal-body iframe').style.left = '0px';
-
 document.getElementById('searchBox').addEventListener('input', () => {
     currentPage = 1;
     searchMovies();
@@ -135,8 +132,6 @@ function displayResults(results) {
 }
 
 async function openModal(result) {
-    console.log('Opening modal for:', result);
-
     const modal = document.getElementById('modal');
     const modalBody = document.getElementById('modal-body');
     modal.style.display = 'block';
@@ -144,13 +139,16 @@ async function openModal(result) {
     const type = result.media_type || (result.title ? 'movie' : 'tv');
     let content = '';
 
+    // Fetch additional sources based on the result ID
+    const additionalSources = getAdditionalSources(result.id, type);
+
     if (type === 'movie') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315" id="iframe"></iframe>
+            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315"></iframe>
             <div class="sources">
                 <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
                 <button onclick="changeSource('https://vidsrc.me/embed/movie?tmdb=${result.id}')">Source 2</button>
-                ${getAdditionalSources(result.id, 'movie')}
+                ${additionalSources}
             </div>
             <div class="details">
                 <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
@@ -166,7 +164,7 @@ async function openModal(result) {
         `;
     } else if (type === 'tv') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315" id="iframe"></iframe>
+            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315"></iframe>
             <div class="season-episode">
                 <div>
                     <label for="season1">Source 1:</label>
@@ -188,7 +186,7 @@ async function openModal(result) {
                     </select>
                     <button onclick="playEpisode('https://vidsrc.me/embed/tv?tmdb=${result.id}&season=' + document.getElementById('season2').value + '&episode=' + document.getElementById('episode2').value)">Play</button>
                 </div>
-                ${getAdditionalSources(result.id, 'tv')}
+                ${additionalSources}
             </div>
             <div class="details">
                 <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
@@ -212,8 +210,6 @@ async function openModal(result) {
         await populateSeasons(result.id, 'season2');
     }
 }
-
-
 
 function getAdditionalSources(id, type) {
     const dataContainer = document.querySelector('#movie-data');
@@ -256,13 +252,9 @@ function getEmbedUrl(embedLink, videoId) {
 
 
 function closeModal() {
-    const modal = document.getElementById('modal');
-    const iframe = document.querySelector('#modal-body iframe');
-    
-    modal.style.display = 'none';
-    iframe.src = ''; // Stop video playback
+    document.getElementById('modal').style.display = 'none';
+    document.querySelector('#modal-body iframe').src = ''; // Stop video playback
 }
-
 
 function changeSource(url) {
     document.querySelector('#modal-body iframe').src = url;
