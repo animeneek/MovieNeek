@@ -144,7 +144,7 @@ async function openModal(result) {
 
     if (type === 'movie') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315" style="position: inherit;"></iframe>
+            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315" class="custom-iframe"></iframe>
             <div class="sources">
                 <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
                 <button onclick="changeSource('https://vidsrc.me/embed/movie?tmdb=${result.id}')">Source 2</button>
@@ -164,7 +164,7 @@ async function openModal(result) {
         `;
     } else if (type === 'tv') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315" style="position: inherit;"></iframe>
+            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315" class="custom-iframe"></iframe>
             <div class="season-episode">
                 <div>
                     <label for="season1">Source 1:</label>
