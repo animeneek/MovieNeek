@@ -139,7 +139,7 @@ header {
     background-color: transparent;  /* Make the background transparent */
     border: none;        /* Remove any borders */
     font-size: 24px;
-    color: #fff;
+    color: #ff4444;
     cursor: pointer;     /* Change cursor to a pointer on hover */
     transition: color 0.3s ease; /* Add a smooth color transition on hover */
 }
@@ -155,7 +155,7 @@ header {
 }
 
 #modal-body iframe {
-    width: 100%;
+    width: 600px;
     height: 315px;
 }
 
