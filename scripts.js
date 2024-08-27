@@ -1,3 +1,5 @@
+const apiKey = 'e3afd4c89e3351edad9e875ff7a01f0c';
+const imagePlaceholder = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0XyKGX9nAiX03Elxmng_nAjDqAP2dkTOmss79ZfTUyJiZtEBheTPEKepCBBFTMLUQrdmhFaqOw6381J61SBV1GrBov1vtaZmJay5mZ_QNbs5BAePbR86cH5Gtvs2qxe8d55_5Ft0vNapAR5q9dpf8jSTpQv8IQV-sK7Xn1vDQ9RKSiSjrKH_pnq7NsnY/s4608/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
 
 let currentPage = 1;
 let totalPages = 1;
@@ -142,7 +144,7 @@ async function openModal(result) {
 
     if (type === 'movie') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315" style="position:inherit;"></iframe>
+            <iframe style="position: inherit;" src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315"></iframe>
             <div class="sources">
                 <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
                 <button onclick="changeSource('https://vidsrc.me/embed/movie?tmdb=${result.id}')">Source 2</button>
@@ -162,7 +164,7 @@ async function openModal(result) {
         `;
     } else if (type === 'tv') {
         content = `
-            <iframe src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315" style="position:inherit;"></iframe>
+            <iframe style="position: inherit;" src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315"></iframe>
             <div class="season-episode">
                 <div>
                     <label for="season1">Source 1:</label>
