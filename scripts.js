@@ -5,6 +5,9 @@ let currentPage = 1;
 let totalPages = 1;
 let isLoading = false;
 
+document.querySelector('#modal-body iframe').style.position = 'inherit';
+document.querySelector('#modal-body iframe').style.left = '0px';
+
 document.getElementById('searchBox').addEventListener('input', () => {
     currentPage = 1;
     searchMovies();
