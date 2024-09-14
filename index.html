@@ -59,14 +59,29 @@
 <!-- index.html -->
 <div id="content-placeholder"></div>
 
-<script>
-  // Fetch the external HTML file and insert its content
-  fetch('movies.html')
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById('content-placeholder').innerHTML = data;
-    })
-    .catch(error => console.error('Error loading content:', error));
+<script>// Fetch the external HTML file and insert its content
+// Fetch the external HTML file and insert its content
+fetch('movies.html')
+  .then(response => response.text())
+  .then(data => {
+    document.getElementById('content-placeholder').innerHTML = data;
+
+    // Now re-run any scripts that depend on the dynamically loaded content
+    document.querySelectorAll('.tmdbmovie').forEach(movie => {
+      const tmdbId = movie.getAttribute('data-tmdb-id');
+      
+      // Example logic to ensure each movie has its correct sources
+      movie.querySelectorAll('.tmdbm').forEach(source => {
+        if (source.closest('.tmdbmovie').getAttribute('data-tmdb-id') === tmdbId) {
+          source.style.display = 'block';  // Show correct source
+        } else {
+          source.style.display = 'none';   // Hide incorrect sources
+        }
+      });
+    });
+  })
+  .catch(error => console.error('Error loading content:', error));
+
 </script>
 
     <script src="scripts.js"></script>
