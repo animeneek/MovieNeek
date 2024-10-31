@@ -1,0 +1,47 @@
+[
+    {
+        "TMDBID": 107235,
+        "Title": "X",
+        "Class": "movie",
+        "SRC": [
+            "streamtape"
+        ],
+        "Source": [
+            "Source 3 (Telugu)"
+        ],
+        "VIDEOID": [
+            "Q3PqKRBr2BS0exj"
+        ]
+    },
+    {
+        "TMDBID": 107360,
+        "Title": "Y",
+        "Class": "series",
+        "SRC": [
+            "streamtape"
+        ],
+        "Source": [
+            "Source 3 (Hindi)"
+        ],
+        "VIDEOID": [
+            "b7PB690p9jF2M6"
+        ]
+    },
+    {
+        "TMDBID": 158023,
+        "Title": "Z",
+        "Class": "movie",
+        "SRC": [
+            "streamtape",
+            "streamtape"
+        ],
+        "Source": [
+            "Source 3 (Telugu Black n White)",
+            "Source 4 (Telugu Color)"
+        ],
+        "VIDEOID": [
+            "oZed86ldyYIJQMp",
+            "K0lga46gx4t0ObV"
+        ]
+    }
+]
