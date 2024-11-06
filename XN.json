@@ -8,19 +8,16 @@
                 "Stars": "Kenna James",
                 "Studio": "Deeper",
                 "Title": "Ministering More",
-                "Source": "streamtape",
-                "SourceName": "Source 1",
-                "VIDEOID": "a0Y2adMKzDTxBoX"
-            },
-            {
-                "Date": "08.29.2024",
-                "IMG": "https://thumb.tapecontent.net/thumb/a0Y2adMKzDTxBoX/D9L3XDoweyuklgv.jpg",
-                "Stars": "Kenna James",
-                "Studio": "Deeper",
-                "Title": "Ministering More",
-                "Source": "streamtape",
-                "SourceName": "Source 2",
-                "VIDEOID": "a0Y2adMKzDTxBCC"
+                "Sources": [
+                    {
+                        "SourceName": "Source 1",
+                        "EmbedURL": "https://streamtape.com/e/a0Y2adMKzDTxBoX"
+                    },
+                    {
+                        "SourceName": "Source 2",
+                        "EmbedURL": "https://streamtape.com/e/a0Y2adMKzDTxBoX"
+                    }
+                ]
             }
         ]
     },
@@ -33,9 +30,12 @@
                 "Stars": NaN,
                 "Studio": "MylfSelects",
                 "Title": "PervMom Loves Creampies Compilation",
-                "Source": "streamtape",
-                "SourceName": "Source 1",
-                "VIDEOID": "yrjRVPYWOpT1ABX"
+                "Sources": [
+                    {
+                        "SourceName": "Source 1",
+                        "EmbedURL": "https://streamtape.com/e/yrjRVPYWOpT1ABX"
+                    }
+                ]
             }
         ]
     }
