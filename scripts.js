@@ -42,28 +42,34 @@ async function searchMovies() {
     isLoading = true;
 
     const query = document.getElementById('searchBox').value.trim();
-    const type = document.getElementById('typeFilter').value; // "all", "movie", or "tv"
+    const type = document.getElementById('typeFilter').value;
     const year = document.getElementById('yearFilter').value;
     const genres = Array.from(document.querySelectorAll('#genres input:checked')).map(el => el.value);
 
     let url = '';
     if (query) {
-        url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&page=${currentPage}&include_adult=${includeAdult}`;
+        url = https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&page=${currentPage}&include_adult=${includeAdult};
     } else {
-        // Adjust URLs based on type
         if (type === 'all') {
-            url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult}`;
+            url = https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult};
+            if (year && year !== 'all') {
+                url += &primary_release_year=${year};
+            }
+            if (genres.length) {
+                url += &with_genres=${genres.join(',')};
+            }
         } else {
-            url = `https://api.themoviedb.org/3/discover/${type}?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult}`;
-        }
-
-        if (year && year !== 'all') {
-            if (type === 'movie' || type === 'all') url += `&primary_release_year=${year}`;
-            if (type === 'tv' || type === 'all') url += `&first_air_date_year=${year}`;
-        }
-
-        if (genres.length) {
-            url += `&with_genres=${genres.join(',')}`;
+            url = https://api.themoviedb.org/3/discover/${type}?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult};
+            if (year && year !== 'all') {
+                if (type === 'movie') {
+                    url += &primary_release_year=${year};
+                } else if (type === 'tv') {
+                    url += &first_air_date_year=${year};
+                }
+            }
+            if (genres.length) {
+                url += &with_genres=${genres.join(',')};
+            }
         }
     }
 
@@ -78,14 +84,22 @@ async function searchMovies() {
 
         let filteredResults = data.results;
 
-        // Apply additional filters for "all" type queries
-        if (type === 'all') {
-            filteredResults = filteredResults.filter(result => {
-                if (!result.genre_ids) return false; // Ensure genre_ids exist
+        // Apply additional filters for search results
+        if (query) {
+            if (type && type !== 'all') {
+                filteredResults = filteredResults.filter(result => result.media_type === type);
+            }
 
-                // Check if selected genres apply to movies or series
-                return genres.every(genreId => result.genre_ids.includes(parseInt(genreId)));
-            });
+            if (year && year !== 'all') {
+                filteredResults = filteredResults.filter(result => (result.release_date || result.first_air_date || "").startsWith(year));
+            }
+
+            if (genres.length) {
+                filteredResults = filteredResults.filter(result => {
+                    const resultGenreIds = result.genre_ids || [];
+                    return genres.every(genreId => resultGenreIds.includes(parseInt(genreId)));
+                });
+            }
         }
 
         displayResults(filteredResults);
@@ -98,16 +112,15 @@ async function searchMovies() {
 }
 
 
-
 function displayResults(results) {
     const resultsContainer = document.getElementById('results');
     results.forEach(result => {
         const item = document.createElement('div');
         item.classList.add('result-item');
-        item.innerHTML = `
+        item.innerHTML = 
             <img src="${result.poster_path ? 'https://image.tmdb.org/t/p/w500' + result.poster_path : imagePlaceholder}" alt="${result.title || result.name}">
             <div class="result-title">${result.title || result.name}</div>
-        `;
+        ;
         item.addEventListener('click', () => openModal(result));
         resultsContainer.appendChild(item);
     });
@@ -130,7 +143,7 @@ async function openModal(result) {
     const additionalSources = getAdditionalSources(result.id, type);
 
     if (type === 'movie') {
-        content = `
+        content = 
             <iframe allowfullscreen='true' src="https://vidsrc.pro/embed/movie/${result.id}" frameborder="0" width="100%" height="315"></iframe>
             <div class="sources">
                 <button onclick="changeSource('https://vidsrc.pro/embed/movie/${result.id}')">Source 1</button>
@@ -148,9 +161,9 @@ async function openModal(result) {
                     <p><strong>Synopsis:</strong> ${result.overview}</p>
                 </div>
             </div>
-        `;
+        ;
     } else if (type === 'tv') {
-        content = `
+        content = 
             <iframe allowfullscreen='true' src="https://vidsrc.pro/embed/tv/${result.id}/1/1" frameborder="0" width="100%" height="315"></iframe>
             <div class="season-episode">
                 <div>
@@ -186,7 +199,7 @@ async function openModal(result) {
                     <p><strong>Synopsis:</strong> ${result.overview}</p>
                 </div>
             </div>
-        `;
+        ;
     }
 
     modalBody.innerHTML = content;
@@ -200,22 +213,22 @@ async function openModal(result) {
 
 function getAdditionalSources(id, type) {
     const dataContainer = document.querySelector('#movie-data');
-    const sources = Array.from(dataContainer.querySelectorAll(`.tmdb${type === 'movie' ? 'movie' : 'series'}[data-tmdb-id='${id}'] .tmdbm`));
+    const sources = Array.from(dataContainer.querySelectorAll(.tmdb${type === 'movie' ? 'movie' : 'series'}[data-tmdb-id='${id}'] .tmdbm));
 
     return sources.map(source => {
         const embedLink = source.getAttribute('data-embed-link');
         const videoId = source.getAttribute('data-videoid');
         const sourceName = source.getAttribute('data-source');
         const urlMap = {
-            'streamtape': `//streamtape.to/e/${videoId}`,
-            'streamwish': `//streamwish.to/e/${videoId}`,
-            'mp4upload': `//mp4upload.com/v/${videoId}`,
-            'other1': `//other1.com/e/${videoId}`,
-            'other2': `//other2.com/e/${videoId}`,
+            'streamtape': //streamtape.to/e/${videoId},
+            'streamwish': //streamwish.to/e/${videoId},
+            'mp4upload': //mp4upload.com/v/${videoId},
+            'other1': //other1.com/e/${videoId},
+            'other2': //other2.com/e/${videoId},
             // Add other sources here if needed
         };
         const url = urlMap[embedLink];
-        return `<button onclick="changeSource('${url}')">${sourceName}</button>`;
+        return <button onclick="changeSource('${url}')">${sourceName}</button>;
     }).join('');
 }
 
@@ -252,35 +265,15 @@ function playEpisode(url) {
 }
 
 async function fetchGenres(genreIds) {
-    try {
-        // Fetch movie and TV genres
-        const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-        const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
-        const movieGenres = (await movieGenresResponse.json()).genres;
-        const tvGenres = (await tvGenresResponse.json()).genres;
-
-        // Combine movie and TV genres and remove duplicates
-        const allGenres = [...movieGenres, ...tvGenres];
-        const uniqueGenres = allGenres.reduce((acc, genre) => {
-            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
-                acc.push(genre);
-            }
-            return acc;
-        }, []);
-
-        // Map genre IDs to names
-        return uniqueGenres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
-    } catch (error) {
-        console.error('Error fetching genres:', error);
-        return '';
-    }
+    const response = await fetch(https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey});
+    const data = await response.json();
+    const genres = data.genres;
+    return genres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
 }
-
-
 
 async function populateSeasons(tvId, selectId) {
     try {
-        const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}?api_key=${apiKey}`);
+        const response = await fetch(https://api.themoviedb.org/3/tv/${tvId}?api_key=${apiKey});
         const data = await response.json();
         const seasons = data.seasons;
         const select = document.getElementById(selectId);
@@ -288,7 +281,7 @@ async function populateSeasons(tvId, selectId) {
         seasons.forEach(season => {
             const option = document.createElement('option');
             option.value = season.season_number;
-            option.textContent = `Season ${season.season_number}`;
+            option.textContent = Season ${season.season_number};
             select.appendChild(option);
         });
         select.addEventListener('change', () => populateEpisodes(tvId, selectId));
@@ -301,7 +294,7 @@ async function populateEpisodes(tvId, selectId) {
     const seasonNumber = document.getElementById(selectId).value;
     if (!seasonNumber) return;
     try {
-        const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=${apiKey}`);
+        const response = await fetch(https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=${apiKey});
         const data = await response.json();
         const episodes = data.episodes;
         const select = document.getElementById(selectId === 'season1' ? 'episode1' : 'episode2');
@@ -309,7 +302,7 @@ async function populateEpisodes(tvId, selectId) {
         episodes.forEach(episode => {
             const option = document.createElement('option');
             option.value = episode.episode_number;
-            option.textContent = `Episode ${episode.episode_number}: ${episode.name}`;
+            option.textContent = Episode ${episode.episode_number}: ${episode.name};
             select.appendChild(option);
         });
     } catch (error) {
@@ -335,29 +328,15 @@ async function loadYears() {
 
 async function loadGenres() {
     try {
-        // Fetch movie and TV genres
-        const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-        const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
-        const movieGenres = (await movieGenresResponse.json()).genres;
-        const tvGenres = (await tvGenresResponse.json()).genres;
-
-        // Combine movie and TV genres and remove duplicates
-        const allGenres = [...movieGenres, ...tvGenres];
-        const uniqueGenres = allGenres.reduce((acc, genre) => {
-            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
-                acc.push(genre);
-            }
-            return acc;
-        }, []);
-
-        // Populate genres container
+        const response = await fetch(https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey});
+        const data = await response.json();
+        const genres = data.genres;
         const genresContainer = document.getElementById('genres');
         genresContainer.innerHTML = '';
-
-        uniqueGenres.forEach(genre => {
+        genres.forEach(genre => {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.id = `genre-${genre.id}`;
+            checkbox.id = genre-${genre.id};
             checkbox.value = genre.id;
             checkbox.addEventListener('change', () => {
                 currentPage = 1;
@@ -365,7 +344,7 @@ async function loadGenres() {
             });
 
             const label = document.createElement('label');
-            label.htmlFor = `genre-${genre.id}`;
+            label.htmlFor = genre-${genre.id};
             label.textContent = genre.name;
 
             genresContainer.appendChild(checkbox);
@@ -375,8 +354,6 @@ async function loadGenres() {
         console.error('Error fetching genres:', error);
     }
 }
-
-
 
 loadGenres();
 loadYears();
