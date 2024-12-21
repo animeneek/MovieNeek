@@ -265,10 +265,29 @@ function playEpisode(url) {
 }
 
 async function fetchGenres(genreIds) {
-    const response = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-    const data = await response.json();
-    const genres = data.genres;
-    return genres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
+    try {
+        // Fetch movie and TV genres
+        const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+        const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
+        const movieGenres = (await movieGenresResponse.json()).genres;
+        const tvGenres = (await tvGenresResponse.json()).genres;
+
+        // Combine movie and TV genres, remove duplicates, and sort alphabetically
+        const allGenres = [...movieGenres, ...tvGenres];
+        const uniqueGenres = allGenres.reduce((acc, genre) => {
+            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
+                acc.push(genre);
+            }
+            return acc;
+        }, []);
+        uniqueGenres.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Map genre IDs to names
+        return uniqueGenres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
+    } catch (error) {
+        console.error('Error fetching genres:', error);
+        return '';
+    }
 }
 
 async function populateSeasons(tvId, selectId) {
@@ -328,12 +347,27 @@ async function loadYears() {
 
 async function loadGenres() {
     try {
-        const response = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-        const data = await response.json();
-        const genres = data.genres;
+        // Fetch movie and TV genres
+        const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
+        const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
+        const movieGenres = (await movieGenresResponse.json()).genres;
+        const tvGenres = (await tvGenresResponse.json()).genres;
+
+        // Combine movie and TV genres, remove duplicates, and sort alphabetically
+        const allGenres = [...movieGenres, ...tvGenres];
+        const uniqueGenres = allGenres.reduce((acc, genre) => {
+            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
+                acc.push(genre);
+            }
+            return acc;
+        }, []);
+        uniqueGenres.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Populate genres container
         const genresContainer = document.getElementById('genres');
         genresContainer.innerHTML = '';
-        genres.forEach(genre => {
+
+        uniqueGenres.forEach(genre => {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `genre-${genre.id}`;
