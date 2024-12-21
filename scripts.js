@@ -42,7 +42,7 @@ async function searchMovies() {
     isLoading = true;
 
     const query = document.getElementById('searchBox').value.trim();
-    const type = document.getElementById('typeFilter').value;
+    const type = document.getElementById('typeFilter').value; // "all", "movie", or "tv"
     const year = document.getElementById('yearFilter').value;
     const genres = Array.from(document.querySelectorAll('#genres input:checked')).map(el => el.value);
 
@@ -50,26 +50,20 @@ async function searchMovies() {
     if (query) {
         url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&page=${currentPage}&include_adult=${includeAdult}`;
     } else {
+        // Adjust URLs based on type
         if (type === 'all') {
             url = `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult}`;
-            if (year && year !== 'all') {
-                url += `&primary_release_year=${year}`;
-            }
-            if (genres.length) {
-                url += `&with_genres=${genres.join(',')}`;
-            }
         } else {
             url = `https://api.themoviedb.org/3/discover/${type}?api_key=${apiKey}&page=${currentPage}&language=en-US&include_adult=${includeAdult}`;
-            if (year && year !== 'all') {
-                if (type === 'movie') {
-                    url += `&primary_release_year=${year}`;
-                } else if (type === 'tv') {
-                    url += `&first_air_date_year=${year}`;
-                }
-            }
-            if (genres.length) {
-                url += `&with_genres=${genres.join(',')}`;
-            }
+        }
+
+        if (year && year !== 'all') {
+            if (type === 'movie' || type === 'all') url += `&primary_release_year=${year}`;
+            if (type === 'tv' || type === 'all') url += `&first_air_date_year=${year}`;
+        }
+
+        if (genres.length) {
+            url += `&with_genres=${genres.join(',')}`;
         }
     }
 
@@ -84,22 +78,14 @@ async function searchMovies() {
 
         let filteredResults = data.results;
 
-        // Apply additional filters for search results
-        if (query) {
-            if (type && type !== 'all') {
-                filteredResults = filteredResults.filter(result => result.media_type === type);
-            }
+        // Apply additional filters for "all" type queries
+        if (type === 'all') {
+            filteredResults = filteredResults.filter(result => {
+                if (!result.genre_ids) return false; // Ensure genre_ids exist
 
-            if (year && year !== 'all') {
-                filteredResults = filteredResults.filter(result => (result.release_date || result.first_air_date || "").startsWith(year));
-            }
-
-            if (genres.length) {
-                filteredResults = filteredResults.filter(result => {
-                    const resultGenreIds = result.genre_ids || [];
-                    return genres.every(genreId => resultGenreIds.includes(parseInt(genreId)));
-                });
-            }
+                // Check if selected genres apply to movies or series
+                return genres.every(genreId => result.genre_ids.includes(parseInt(genreId)));
+            });
         }
 
         displayResults(filteredResults);
@@ -110,6 +96,7 @@ async function searchMovies() {
         isLoading = false;
     }
 }
+
 
 
 function displayResults(results) {
