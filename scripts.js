@@ -266,22 +266,29 @@ function playEpisode(url) {
 
 async function fetchGenres(genreIds) {
     try {
-        // Fetch both movie and TV genres
+        // Fetch movie and TV genres
         const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
         const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
         const movieGenres = (await movieGenresResponse.json()).genres;
         const tvGenres = (await tvGenresResponse.json()).genres;
 
-        // Combine all genres
+        // Combine movie and TV genres and remove duplicates
         const allGenres = [...movieGenres, ...tvGenres];
+        const uniqueGenres = allGenres.reduce((acc, genre) => {
+            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
+                acc.push(genre);
+            }
+            return acc;
+        }, []);
 
         // Map genre IDs to names
-        return allGenres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
+        return uniqueGenres.filter(genre => genreIds.includes(genre.id)).map(genre => genre.name).join(', ');
     } catch (error) {
         console.error('Error fetching genres:', error);
         return '';
     }
 }
+
 
 
 async function populateSeasons(tvId, selectId) {
@@ -341,62 +348,37 @@ async function loadYears() {
 
 async function loadGenres() {
     try {
-        // Fetch movie genres
+        // Fetch movie and TV genres
         const movieGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}`);
-        const movieGenresData = await movieGenresResponse.json();
-        const movieGenres = movieGenresData.genres;
-
-        // Fetch TV genres
         const tvGenresResponse = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${apiKey}`);
-        const tvGenresData = await tvGenresResponse.json();
-        const tvGenres = tvGenresData.genres;
+        const movieGenres = (await movieGenresResponse.json()).genres;
+        const tvGenres = (await tvGenresResponse.json()).genres;
+
+        // Combine movie and TV genres and remove duplicates
+        const allGenres = [...movieGenres, ...tvGenres];
+        const uniqueGenres = allGenres.reduce((acc, genre) => {
+            if (!acc.some(existingGenre => existingGenre.id === genre.id)) {
+                acc.push(genre);
+            }
+            return acc;
+        }, []);
 
         // Populate genres container
         const genresContainer = document.getElementById('genres');
         genresContainer.innerHTML = '';
 
-        const movieLabel = document.createElement('div');
-        movieLabel.textContent = 'Movie Genres';
-        movieLabel.classList.add('genre-heading');
-        genresContainer.appendChild(movieLabel);
-
-        movieGenres.forEach(genre => {
+        uniqueGenres.forEach(genre => {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.id = `genre-movie-${genre.id}`;
+            checkbox.id = `genre-${genre.id}`;
             checkbox.value = genre.id;
-            checkbox.setAttribute('data-type', 'movie'); // Mark as movie genre
             checkbox.addEventListener('change', () => {
                 currentPage = 1;
                 searchMovies();
             });
 
             const label = document.createElement('label');
-            label.htmlFor = `genre-movie-${genre.id}`;
-            label.textContent = genre.name;
-
-            genresContainer.appendChild(checkbox);
-            genresContainer.appendChild(label);
-        });
-
-        const tvLabel = document.createElement('div');
-        tvLabel.textContent = 'TV Genres';
-        tvLabel.classList.add('genre-heading');
-        genresContainer.appendChild(tvLabel);
-
-        tvGenres.forEach(genre => {
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `genre-tv-${genre.id}`;
-            checkbox.value = genre.id;
-            checkbox.setAttribute('data-type', 'tv'); // Mark as TV genre
-            checkbox.addEventListener('change', () => {
-                currentPage = 1;
-                searchMovies();
-            });
-
-            const label = document.createElement('label');
-            label.htmlFor = `genre-tv-${genre.id}`;
+            label.htmlFor = `genre-${genre.id}`;
             label.textContent = genre.name;
 
             genresContainer.appendChild(checkbox);
@@ -406,6 +388,7 @@ async function loadGenres() {
         console.error('Error fetching genres:', error);
     }
 }
+
 
 
 loadGenres();
