@@ -223,7 +223,7 @@ function getAdditionalSources(id, type) {
             'streamtape': `//streamtape.to/e/${videoId}`,
             'streamwish': `//streamwish.to/e/${videoId}`,
             'mp4upload': `//mp4upload.com/v/${videoId}`,
-            'other1': `//other1.com/e/${videoId}`,
+            'earnvids': `//earnvids.com/file/${videoId}`,
             'other2': `//other2.com/e/${videoId}`,
             // Add other sources here if needed
         };
@@ -239,7 +239,7 @@ function getEmbedUrl(embedLink, videoId) {
         'streamtape': 'https://streamtape.to/e/',
         'streamwish': 'https://streamwish.to/e/',
         'mp4upload': 'https://mp4upload.com/v/',
-        'otherone': 'https://other1.com/e/',
+        'earnvids': 'https://earnvids.com/file/',
         'othertwo': 'https://other2.com/e/',
         'otherthree': 'https://other3.com/e/',
         'otherfour': 'https://other4.com/e/',
