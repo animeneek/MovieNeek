@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieNeek | Search</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(20, 20, 20, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 1000;
+    }
+    .movie-card {
+      transition: all 0.3s ease;
+      transform-origin: center bottom;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+      z-index: 20;
+    }
+    .movie-card-container {
+      position: relative;
+      overflow: visible;
+    }
+    .movie-poster {
+      position: relative;
+      overflow: hidden;
+    }
+    .movie-poster::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30%;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    }
+    .rating-circle {
+      --percentage: 0;
+      --primary: #ff4444;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: 
+        radial-gradient(closest-side, #111 85%, transparent 86%),
+        conic-gradient(var(--primary) calc(var(--percentage)*1%), #222 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      border: 2px solid #111;
+      z-index: 2;
+    }
+    .rating-circle::before {
+      content: attr(data-rating);
+      font-size: 9px;
+      font-weight: bold;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .no-results {
+      background: linear-gradient(to right, rgba(255,68,68,0.1), rgba(255,68,68,0.05));
+    }
+    .filter-pill {
+      transition: all 0.2s ease;
+    }
+    .filter-pill:hover {
+      transform: translateY(-1px);
+    }
+    .filter-dropdown {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .filter-dropdown.open {
+      max-height: 300px;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .filter-btn {
+      background: rgba(30, 30, 30, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .filter-btn:hover {
+      background: rgba(50, 50, 50, 0.9);
+    }
+    /* Custom scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255,68,68,0.5);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,68,68,0.8);
+    }
+    /* Dropdown options */
+    .dropdown-option {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    .dropdown-option:hover {
+      background: rgba(255,68,68,0.1);
+    }
+    .dropdown-option.selected {
+      background: rgba(255,68,68,0.2);
+      color: #ff4444;
+    }
+    @media (max-width: 640px) {
+      .filter-controls {
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      .filter-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+      }
+      .filter-btn i {
+        margin-right: 0.2rem;
+      }
+      .filter-dropdown {
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90vw;
+        max-width: 300px;
+      }
+    }
+  </style>
+  <style>
+  /* Add this at the end of your existing styles */
+  @media (max-width: 640px) {
+    .filter-btn span:not(.sr-only) {
+      display: none;
+    }
+    .filter-btn i.fa-chevron-down {
+      display: none;
+    }
+    .filter-btn {
+      padding: 0.5rem;
+      min-width: 36px;
+      justify-content: center;
+    }
+    .filter-btn i:first-child {
+      margin-right: 0;
+    }
+  }
+  
+  /* Accessibility - hide visually but keep for screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>
+</head>
+<body class="bg-black text-white">
+
+  <!-- Header -->  
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 pt-2 pb-24 min-h-screen">
+    <!-- Search Filters -->
+    <div class="sticky top-20 md:top-16 z-30 bg-black/80 backdrop-blur-sm py-4">
+      <!-- Active Filters -->
+      <div id="active-filters" class="flex flex-wrap gap-2 mb-3 px-2 justify-center"></div>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls flex flex-wrap gap-2 px-2 justify-center">
+        <!-- Content Type Filter -->
+        <div class="relative group">
+          <button class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm">
+            <i class="fas fa-list text-primary mr-1"></i>
+            <span id="content-type-label">All</span>
+            <i class="fas fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div class="filter-dropdown absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-dark rounded-lg shadow-lg z-40 border border-gray-800">
+            <div class="p-3 max-h-60 overflow-y-auto custom-scrollbar">
+              <div class="dropdown-option selected" data-type="multi">All</div>
+              <div class="dropdown-option" data-type="movie">Movies</div>
+              <div class="dropdown-option" data-type="tv">Series</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Genre Filter -->
+        <div class="relative group">
+          <button class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm">
+            <i class="fas fa-tags text-primary mr-1"></i>
+            <span>Genre</span>
+            <i class="fas fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div class="filter-dropdown absolute left-1/2 transform -translate-x-1/2 mt-1 w-64 bg-dark rounded-lg shadow-lg z-40 border border-gray-800">
+            <div class="p-3 max-h-60 overflow-y-auto custom-scrollbar" id="genre-filter-options"></div>
+          </div>
+        </div>
+        
+        <!-- Year Filter -->
+        <div class="relative group">
+          <button class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm">
+            <i class="fas fa-calendar text-primary mr-1"></i>
+            <span>Year</span>
+            <i class="fas fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div class="filter-dropdown absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-dark rounded-lg shadow-lg z-40 border border-gray-800">
+            <div class="p-3">
+              <input type="text" id="year-search" placeholder="Search years..." class="w-full bg-gray-900 text-white px-2 py-1 rounded text-sm mb-2">
+              <div class="max-h-52 overflow-y-auto custom-scrollbar" id="year-options"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Language Filter -->
+        <div class="relative group">
+          <button class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm">
+            <i class="fas fa-language text-primary mr-1"></i>
+            <span>Language</span>
+            <i class="fas fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div class="filter-dropdown absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-dark rounded-lg shadow-lg z-40 border border-gray-800">
+            <div class="p-3 max-h-60 overflow-y-auto">
+              <input type="text" id="language-search" placeholder="Search..." class="w-full bg-gray-900 text-white px-2 py-1 rounded text-sm mb-2">
+              <div id="language-filter-options" class="custom-scrollbar"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="relative group">
+          <button class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm">
+            <i class="fas fa-sort text-primary mr-1"></i>
+            <span>Sort</span>
+            <i class="fas fa-chevron-down text-xs ml-1"></i>
+          </button>
+          <div class="filter-dropdown absolute left-1/2 transform -translate-x-1/2 mt-1 w-48 bg-dark rounded-lg shadow-lg z-40 border border-gray-800">
+            <div class="p-3 max-h-60 overflow-y-auto custom-scrollbar">
+              <div class="dropdown-option selected" data-sort="popularity.desc">Popularity Desc</div>
+              <div class="dropdown-option" data-sort="popularity.asc">Popularity Asc</div>
+              <div class="dropdown-option" data-sort="vote_average.desc">Rating Desc</div>
+              <div class="dropdown-option" data-sort="vote_average.asc">Rating Asc</div>
+              <div class="dropdown-option" data-sort="primary_release_date.desc">Newest First</div>
+              <div class="dropdown-option" data-sort="primary_release_date.asc">Oldest First</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Clear Filters -->
+        <button id="clear-filters" class="filter-btn flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm text-gray-400 hover:text-white">
+          <i class="fas fa-times text-primary mr-1"></i>
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    <div id="search-results" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <!-- Results will be inserted here -->
+      <div class="col-span-full text-center py-20 text-gray-400">
+        <i class="fas fa-search fa-2x mb-4"></i>
+        <p>Use filters to find movies, series, and people</p>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="hidden text-center py-10">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+    </div>
+    
+    <!-- Load More Button -->
+    <div id="load-more-container" class="text-center mt-6 hidden">
+      <button id="load-more" class="px-6 py-2 bg-primary hover:bg-red-600 rounded-full font-medium">
+        Load More
+      </button>
+    </div>
+  </main>
+
+<script>
+    const TMDB_API_KEY = 'e3afd4c89e3351edad9e875ff7a01f0c';
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+    const DEFAULT_POSTER = 'https://github.com/animeneek/MN/raw/main/assets/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
+    
+    const state = {
+      currentPage: 1,
+      totalPages: 1,
+      currentQuery: '',
+      filters: {
+        contentType: 'multi',
+        genres: [],
+        years: [],
+        language: null,
+        sortBy: 'popularity.desc'
+      },
+      genres: {
+        movie: [],
+        tv: []
+      },
+      languages: [],
+      allYears: Array.from({length: 30}, (_, i) => new Date().getFullYear() - i),
+      allResults: [],
+      filteredResults: [],
+      displayedResults: [],
+      isFiltering: false,
+      hasFiltersApplied: false
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      state.currentQuery = urlParams.get('query') || '';
+      
+      await loadGenres();
+      await loadLanguages();
+      renderYearOptions();
+      renderLanguageOptions();
+      
+      setupFilterControls();
+      setupDropdowns();
+      
+      performSearch();
+    });
+
+    async function loadGenres() {
+      try {
+        const [movieGenres, tvGenres] = await Promise.all([
+          fetch(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}`).then(res => res.json()),
+          fetch(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}`).then(res => res.json())
+        ]);
+        
+        state.genres.movie = movieGenres.genres || [];
+        state.genres.tv = tvGenres.genres || [];
+        renderGenreOptions();
+      } catch (error) {
+        console.error('Error loading genres:', error);
+      }
+    }
+
+    async function loadLanguages() {
+      try {
+        const languages = await fetch(`${BASE_URL}/configuration/languages?api_key=${TMDB_API_KEY}`).then(res => res.json());
+        
+        const priorityLanguages = ['en', 'hi', 'te', 'ta', 'kn', 'ml'];
+        const indianLanguages = ['bn', 'pa', 'gu', 'mr', 'or', 'as'];
+        
+        state.languages = [
+          ...priorityLanguages.map(code => languages.find(lang => lang.iso_639_1 === code)).filter(Boolean),
+          ...indianLanguages.map(code => languages.find(lang => lang.iso_639_1 === code)).filter(Boolean),
+          ...languages.filter(lang => !priorityLanguages.includes(lang.iso_639_1) && !indianLanguages.includes(lang.iso_639_1))
+        ].filter(Boolean).slice(0, 100);
+      } catch (error) {
+        console.error('Error loading languages:', error);
+      }
+    }
+
+    function renderGenreOptions() {
+      const container = document.getElementById('genre-filter-options');
+      const currentMediaType = state.filters.contentType === 'tv' ? 'tv' : 'movie';
+      const genres = state.genres[currentMediaType] || [];
+      
+      container.innerHTML = genres.map(genre => `
+        <div class="dropdown-option ${state.filters.genres.includes(genre.id) ? 'selected' : ''}" data-id="${genre.id}">
+          ${genre.name}
+        </div>
+      `).join('');
+      
+      container.querySelectorAll('.dropdown-option').forEach(option => {
+        option.addEventListener('click', function() {
+          const genreId = parseInt(this.getAttribute('data-id'));
+          state.filters.genres = state.filters.genres.includes(genreId) 
+            ? state.filters.genres.filter(id => id !== genreId) 
+            : [...state.filters.genres, genreId];
+          updateActiveFilters();
+          state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                 state.filters.years.length > 0 || 
+                                 state.filters.language !== null;
+          performSearch(true);
+          renderGenreOptions();
+        });
+      });
+    }
+
+    function renderYearOptions() {
+      const container = document.getElementById('year-options');
+      const searchInput = document.getElementById('year-search');
+      
+      const updateYears = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filtered = searchTerm 
+          ? state.allYears.filter(year => year.toString().includes(searchTerm))
+          : state.allYears;
+        
+        container.innerHTML = filtered.map(year => `
+          <div class="dropdown-option ${state.filters.years.includes(year) ? 'selected' : ''}" data-year="${year}">
+            ${year}
+          </div>
+        `).join('');
+        
+        container.querySelectorAll('.dropdown-option').forEach(option => {
+          option.addEventListener('click', function() {
+            const year = parseInt(this.getAttribute('data-year'));
+            state.filters.years = state.filters.years.includes(year)
+              ? state.filters.years.filter(y => y !== year)
+              : [year]; // TMDB only supports single year filter
+            updateActiveFilters();
+            state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                   state.filters.years.length > 0 || 
+                                   state.filters.language !== null;
+            performSearch(true);
+            renderYearOptions();
+          });
+        });
+      };
+      
+      updateYears();
+      searchInput.addEventListener('input', updateYears);
+    }
+
+    function renderLanguageOptions() {
+      const container = document.getElementById('language-filter-options');
+      const searchInput = document.getElementById('language-search');
+      
+      const filterLanguages = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filtered = searchTerm 
+          ? state.languages.filter(lang => 
+              lang.english_name.toLowerCase().includes(searchTerm) ||
+              lang.iso_639_1.toLowerCase().includes(searchTerm))
+          : state.languages;
+        
+        container.innerHTML = filtered.map(lang => `
+          <div class="dropdown-option ${state.filters.language === lang.iso_639_1 ? 'selected' : ''}" data-code="${lang.iso_639_1}">
+            ${lang.english_name} (${lang.iso_639_1})
+          </div>
+        `).join('');
+        
+        container.querySelectorAll('.dropdown-option').forEach(div => {
+          div.addEventListener('click', function() {
+            const langCode = this.getAttribute('data-code');
+            state.filters.language = state.filters.language === langCode ? null : langCode;
+            updateActiveFilters();
+            state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                   state.filters.years.length > 0 || 
+                                   state.filters.language !== null;
+            performSearch(true);
+            renderLanguageOptions();
+          });
+        });
+      };
+      
+      filterLanguages();
+      searchInput.addEventListener('input', filterLanguages);
+    }
+
+    function setupFilterControls() {
+      document.querySelectorAll('[data-type]').forEach(option => {
+        option.addEventListener('click', function() {
+          state.filters.contentType = this.getAttribute('data-type');
+          document.getElementById('content-type-label').textContent = this.textContent;
+          
+          document.querySelectorAll('[data-type]').forEach(opt => {
+            opt.classList.toggle('selected', opt === this);
+          });
+          
+          updateActiveFilters();
+          state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                 state.filters.years.length > 0 || 
+                                 state.filters.language !== null;
+          performSearch(true);
+          this.closest('.filter-dropdown').classList.remove('open');
+        });
+      });
+      
+      document.querySelectorAll('[data-sort]').forEach(option => {
+        option.addEventListener('click', function() {
+          state.filters.sortBy = this.getAttribute('data-sort');
+          
+          document.querySelectorAll('[data-sort]').forEach(opt => {
+            opt.classList.toggle('selected', opt === this);
+          });
+          
+          updateActiveFilters();
+          state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                 state.filters.years.length > 0 || 
+                                 state.filters.language !== null;
+          performSearch(true);
+          this.closest('.filter-dropdown').classList.remove('open');
+        });
+      });
+      
+      document.getElementById('clear-filters').addEventListener('click', () => {
+        state.filters = {
+          contentType: 'multi',
+          genres: [],
+          years: [],
+          language: null,
+          sortBy: 'popularity.desc'
+        };
+        state.hasFiltersApplied = false;
+        
+        document.getElementById('content-type-label').textContent = 'All';
+        document.querySelectorAll('[data-type]').forEach(opt => {
+          opt.classList.toggle('selected', opt.textContent === 'All');
+        });
+        document.querySelectorAll('[data-sort]').forEach(opt => {
+          opt.classList.toggle('selected', opt.getAttribute('data-sort') === 'popularity.desc');
+        });
+        
+        updateActiveFilters();
+        performSearch(true);
+        renderGenreOptions();
+        renderLanguageOptions();
+        renderYearOptions();
+      });
+      
+      document.getElementById('load-more').addEventListener('click', () => {
+        state.currentPage++;
+        performSearch(false);
+      });
+    }
+
+    function setupDropdowns() {
+      document.querySelectorAll('.group > button').forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const dropdown = this.nextElementSibling;
+          const isOpen = dropdown.classList.contains('open');
+          
+          document.querySelectorAll('.filter-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('open');
+          });
+          
+          dropdown.classList.toggle('open', !isOpen);
+        });
+      });
+      
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.filter-dropdown').forEach(d => {
+          d.classList.remove('open');
+        });
+      });
+      
+      document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      });
+    }
+
+    function updateActiveFilters() {
+      const container = document.getElementById('active-filters');
+      const filters = [];
+      
+      if (state.filters.contentType !== 'multi') {
+        filters.push({
+          type: 'contentType',
+          id: state.filters.contentType,
+          name: state.filters.contentType === 'movie' ? 'Movies' : 'Series',
+          icon: state.filters.contentType === 'movie' ? 'fas fa-film' : 'fas fa-tv'
+        });
+      }
+      
+      state.filters.genres.forEach(genreId => {
+        const currentMediaType = state.filters.contentType === 'tv' ? 'tv' : 'movie';
+        const genre = state.genres[currentMediaType].find(g => g.id === genreId);
+        if (genre) {
+          filters.push({
+            type: 'genre',
+            id: genreId,
+            name: genre.name,
+            icon: 'fas fa-tag'
+          });
+        }
+      });
+      
+      state.filters.years.forEach(year => {
+        filters.push({
+          type: 'year',
+          id: year,
+          name: year,
+          icon: 'fas fa-calendar'
+        });
+      });
+      
+      if (state.filters.language) {
+        const lang = state.languages.find(l => l.iso_639_1 === state.filters.language);
+        if (lang) {
+          filters.push({
+            type: 'language',
+            id: state.filters.language,
+            name: lang.english_name,
+            icon: 'fas fa-language'
+          });
+        }
+      }
+      
+      if (state.filters.sortBy !== 'popularity.desc') {
+        const sortText = {
+          'popularity.asc': 'Popularity (Asc)',
+          'vote_average.desc': 'Rating (Desc)',
+          'vote_average.asc': 'Rating (Asc)',
+          'primary_release_date.desc': 'Newest First',
+          'primary_release_date.asc': 'Oldest First'
+        }[state.filters.sortBy] || 'Sorted';
+        
+        filters.push({
+          type: 'sort',
+          id: 'sort',
+          name: sortText,
+          icon: 'fas fa-sort'
+        });
+      }
+      
+      container.innerHTML = filters.map(filter => `
+        <div class="filter-pill flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-full text-xs">
+          <i class="${filter.icon} text-primary"></i>
+          ${filter.name}
+          <button class="remove-filter" data-type="${filter.type}" data-id="${filter.id}">
+            <i class="fas fa-times text-gray-400 hover:text-white"></i>
+          </button>
+        </div>
+      `).join('');
+      
+      document.querySelectorAll('.remove-filter').forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const type = this.getAttribute('data-type');
+          const id = this.getAttribute('data-id');
+          
+          switch (type) {
+            case 'contentType':
+              state.filters.contentType = 'multi';
+              document.getElementById('content-type-label').textContent = 'All';
+              document.querySelectorAll('[data-type]').forEach(opt => {
+                opt.classList.toggle('selected', opt.textContent === 'All');
+              });
+              break;
+            case 'genre':
+              state.filters.genres = state.filters.genres.filter(g => g !== parseInt(id));
+              renderGenreOptions();
+              break;
+            case 'year':
+              state.filters.years = state.filters.years.filter(y => y !== parseInt(id));
+              renderYearOptions();
+              break;
+            case 'language':
+              state.filters.language = null;
+              renderLanguageOptions();
+              break;
+            case 'sort':
+              state.filters.sortBy = 'popularity.desc';
+              document.querySelectorAll('[data-sort]').forEach(opt => {
+                opt.classList.toggle('selected', opt.getAttribute('data-sort') === 'popularity.desc');
+              });
+              break;
+          }
+          
+          state.hasFiltersApplied = state.filters.genres.length > 0 || 
+                                 state.filters.years.length > 0 || 
+                                 state.filters.language !== null;
+          updateActiveFilters();
+          performSearch(true);
+        });
+      });
+    }
+
+    async function performSearch(reset = true) {
+      if (reset) {
+        state.currentPage = 1;
+        state.allResults = [];
+        state.filteredResults = [];
+        state.displayedResults = [];
+        document.getElementById('search-results').innerHTML = '';
+      }
+
+      const loading = document.getElementById('loading');
+      const loadMoreBtn = document.getElementById('load-more-container');
+      
+      loading.classList.remove('hidden');
+      loadMoreBtn.classList.add('hidden');
+
+      try {
+        let newResults = [];
+        const query = state.currentQuery.trim();
+        const params = new URLSearchParams();
+        params.append('api_key', TMDB_API_KEY);
+        params.append('page', state.currentPage);
+
+        if (query) {
+          params.append('query', query);
+          if (state.filters.contentType === 'multi') {
+            const [movies, tv] = await Promise.all([
+              fetch(`${BASE_URL}/search/movie?${params}`).then(res => res.json()),
+              fetch(`${BASE_URL}/search/tv?${params}`).then(res => res.json())
+            ]);
+            newResults = [...(movies.results || []), ...(tv.results || [])];
+            state.totalPages = Math.max(movies.total_pages || 1, tv.total_pages || 1);
+          } else {
+            const res = await fetch(`${BASE_URL}/search/${state.filters.contentType}?${params}`).then(res => res.json());
+            newResults = res.results || [];
+            state.totalPages = res.total_pages || 1;
+          }
+
+          // Filter results to match ALL selected genres (AND logic)
+          newResults = newResults.filter(item => {
+            // Check if item has ALL selected genres
+            const matchesGenre = state.filters.genres.length === 0 || 
+                              (item.genre_ids && state.filters.genres.every(g => item.genre_ids.includes(g)));
+            const matchesLang = !state.filters.language || item.original_language === state.filters.language;
+            const date = item.release_date || item.first_air_date;
+            const year = date ? parseInt(date.substring(0, 4)) : null;
+            const matchesYear = state.filters.years.length === 0 || (year && state.filters.years.includes(year));
+            return matchesGenre && matchesLang && matchesYear;
+          });
+
+        } else {
+          // Use Discover API when no query
+          const type = state.filters.contentType === 'multi' ? 'movie' : state.filters.contentType;
+          let url = `${BASE_URL}/discover/${type}?api_key=${TMDB_API_KEY}&page=${state.currentPage}`;
+
+          if (state.filters.genres.length > 0) {
+            // For multiple genres, we need to ensure ALL are present
+            url += `&with_genres=${state.filters.genres.join(',')}`;
+          }
+          if (state.filters.language) url += `&with_original_language=${state.filters.language}`;
+          if (state.filters.years.length > 0) {
+            if (type === 'movie') url += `&primary_release_year=${state.filters.years[0]}`;
+            else url += `&first_air_date_year=${state.filters.years[0]}`;
+          }
+          if (state.filters.sortBy) url += `&sort_by=${state.filters.sortBy}`;
+
+          const res = await fetch(url).then(res => res.json());
+          newResults = res.results || [];
+          state.totalPages = res.total_pages || 1;
+        }
+
+        // Add new results to state
+        if (reset) {
+          state.allResults = [...newResults];
+        } else {
+          state.allResults = [...state.allResults, ...newResults];
+        }
+
+        // Apply filters to all results
+        state.filteredResults = state.allResults.filter(item => {
+          // Check if item has ALL selected genres
+          const matchesGenre = state.filters.genres.length === 0 || 
+                            (item.genre_ids && state.filters.genres.every(g => item.genre_ids.includes(g)));
+          const matchesLang = !state.filters.language || item.original_language === state.filters.language;
+          const date = item.release_date || item.first_air_date;
+          const year = date ? parseInt(date.substring(0, 4)) : null;
+          const matchesYear = state.filters.years.length === 0 || (year && state.filters.years.includes(year));
+          return matchesGenre && matchesLang && matchesYear;
+        });
+
+        // Sort results
+        state.filteredResults = sortResults(state.filteredResults, state.filters.sortBy);
+
+        // Display only the current page's results
+        const resultsPerPage = 20;
+        const startIdx = 0;
+        const endIdx = resultsPerPage * state.currentPage;
+        state.displayedResults = state.filteredResults.slice(startIdx, endIdx);
+
+        // Render results
+        if (reset) {
+          document.getElementById('search-results').innerHTML = '';
+          displayResults(state.displayedResults);
+        } else {
+          displayResults(state.displayedResults.slice(resultsPerPage * (state.currentPage - 1)));
+        }
+
+        // Show/hide "Load More" button
+        const hasMore = state.filteredResults.length > state.displayedResults.length || 
+                       (query && state.currentPage < state.totalPages);
+        loadMoreBtn.classList.toggle('hidden', !hasMore);
+
+        if (state.displayedResults.length === 0) {
+          showNoResults();
+        }
+
+      } catch (err) {
+        console.error('Search error:', err);
+        showError(reset);
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    function sortResults(results, sortBy) {
+      return [...results].sort((a, b) => {
+        if (sortBy.includes('popularity')) {
+          return sortBy.includes('desc') ? b.popularity - a.popularity : a.popularity - b.popularity;
+        }
+        if (sortBy.includes('vote_average')) {
+          return sortBy.includes('desc') ? (b.vote_average || 0) - (a.vote_average || 0) : (a.vote_average || 0) - (b.vote_average || 0);
+        }
+        if (sortBy.includes('release_date')) {
+          const dateA = a.release_date || a.first_air_date || '';
+          const dateB = b.release_date || b.first_air_date || '';
+          return sortBy.includes('desc') ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+        }
+        return 0;
+      });
+    }
+
+    function displayResults(results, reset) {
+      const container = document.getElementById('search-results');
+      if (reset) container.innerHTML = '';
+      
+      results.forEach(item => {
+        const card = createResultCard(item);
+        if (card) container.appendChild(card);
+      });
+    }
+
+    function createResultCard(item) {
+      const div = document.createElement('div');
+      div.className = 'movie-card-container fade-in';
+      
+      const isMovie = item.media_type === 'movie' || 
+                     (state.filters.contentType === 'movie' && !item.media_type) ||
+                     (item.title && !item.name);
+      
+      const title = isMovie ? 
+        (item.title || 'Untitled Movie') : 
+        (item.name || 'Untitled TV Show');
+      
+      const date = isMovie ? item.release_date : item.first_air_date;
+      const year = date ? date.substring(0,4) : 'N/A';
+      const percentage = item.vote_average ? Math.round(item.vote_average * 10) : 0;
+      
+      div.innerHTML = `
+        <div class="movie-card w-40 sm:w-48 md:w-56">
+          <a href="info.html?id=${item.id}&type=${isMovie ? 'movie' : 'tv'}" class="block relative">
+            <div class="movie-poster aspect-[2/3] bg-dark rounded-lg overflow-hidden mb-2">
+              <img 
+                src="${item.poster_path ? IMAGE_URL + item.poster_path : DEFAULT_POSTER}" 
+                alt="${title}"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              >
+              ${percentage > 0 ? `
+                <div class="rating-circle" data-rating="${percentage}%" style="--percentage: ${percentage}"></div>
+              ` : ''}
+            </div>
+            <h3 class="font-medium truncate">${title}</h3>
+            <p class="text-xs text-gray-400">${year}</p>
+          </a>
+        </div>
+      `;
+      
+      return div;
+    }
+
+    function showNoResults() {
+      document.getElementById('search-results').innerHTML = `
+        <div class="col-span-full no-results rounded-lg p-8 text-center">
+          <i class="fas fa-film fa-3x mb-4 text-primary/50"></i>
+          <h3 class="text-xl font-bold mb-2">No results found</h3>
+          <p class="text-gray-400">Try adjusting your filters</p>
+        </div>
+      `;
+    }
+
+    function showError(reset) {
+      if (reset) {
+        document.getElementById('search-results').innerHTML = `
+          <div class="col-span-full text-center py-20 text-gray-400">
+            <i class="fas fa-exclamation-circle fa-2x mb-4"></i>
+            <p>Error loading results. Please try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    fetch('header.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('header').innerHTML = data;
+        
+        document.querySelectorAll('form[action="search.html"]').forEach(form => {
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const query = this.querySelector('input').value.trim();
+            window.location.href = `search.html?query=${encodeURIComponent(query)}`;
+          });
+        });
+      })
+      .catch(error => console.error('Error fetching header:', error));
+</script>
+  
+</body>
+</html>

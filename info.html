@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieNeek | Info</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .movie-poster {
+      position: relative;
+      overflow: hidden;
+    }
+    .movie-poster::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30%;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    }
+    .rating-circle {
+      --percentage: 0;
+      --primary: #ff4444;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: 
+        radial-gradient(closest-side, #111 85%, transparent 86%),
+        conic-gradient(var(--primary) calc(var(--percentage)*1%), #222 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      border: 2px solid #111;
+      z-index: 2;
+    }
+    .rating-circle::before {
+      content: attr(data-rating);
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .cast-scroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .cast-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .tab-button {
+      transition: all 0.2s ease;
+    }
+    .tab-button.active {
+      color: #ff4444;
+      border-bottom: 2px solid #ff4444;
+    }
+    .season-selector {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .season-selector::-webkit-scrollbar {
+      display: none;
+    }
+    .episode-card {
+      background: #222;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .modal-overlay {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+    }
+    .modal-header {
+      background: #222;
+      border-bottom: 1px solid #333;
+    }
+    .source-btn {
+      min-width: 100px;
+    }
+    .similar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .similar-item {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .similar-poster {
+      width: 80px;
+      flex-shrink: 0;
+    }
+    @media (min-width: 640px) {
+      .similar-poster {
+        width: 100px;
+      }
+    }
+    .tab-container {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .person-image {
+      aspect-ratio: 2/3;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body class="bg-black text-white">
+
+  <!-- Header -->  
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="pb-20 pt-4">
+    <div class="container mx-auto px-4">
+      <div class="info-grid grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+        <!-- Poster Column -->
+        <div class="poster-container md:col-span-1">
+          <div class="movie-poster aspect-[2/3] bg-dark rounded-lg overflow-hidden shadow-lg w-full relative">
+            <img id="poster-image" class="w-full h-full object-cover" src="" alt="">
+            <div id="rating-circle" class="rating-circle"></div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex gap-3 mt-4">
+            <button id="watch-trailer" class="w-full bg-primary hover:bg-red-600 py-2 rounded-lg font-medium flex items-center justify-center gap-2">
+              <i class="fas fa-play"></i> Trailer
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Column -->
+        <div class="md:col-span-3">
+          <h1 id="title" class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"></h1>
+          <div class="flex flex-wrap items-center gap-2 text-sm text-gray-400 mb-4">
+            <span id="year"></span>
+            <span>•</span>
+            <span id="runtime"></span>
+            <span>•</span>
+            <span id="certification"></span>
+          </div>
+
+          <!-- Genres -->
+          <div id="genres" class="flex flex-wrap gap-2 mb-4"></div>
+
+          <!-- Overview -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Synopsis</h3>
+            <p id="overview" class="text-gray-300"></p>
+          </div>
+
+          <!-- Metadata -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <h4 class="text-sm text-gray-400">Status</h4>
+              <p id="status" class="font-medium"></p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Original Language</h4>
+              <p id="language" class="font-medium"></p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Director</h4>
+              <p id="director" class="font-medium">-</p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Writer</h4>
+              <p id="writer" class="font-medium">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="border-b border-gray-800 mt-8 mb-6">
+        <div class="tab-container">
+          <button class="tab-button px-4 py-2 font-medium active" data-tab="cast">Cast</button>
+          <button class="tab-button px-4 py-2 font-medium" data-tab="sources">
+            <span id="sources-tab-label">Watch Here</span>
+          </button>
+          <button class="tab-button px-4 py-2 font-medium" data-tab="similar">Similar</button>
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Cast Tab -->
+        <div id="cast-tab" class="tab-panel active">
+          <div class="cast-scroll flex gap-4 overflow-x-auto pb-4">
+            <!-- Cast members will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Sources Tab -->
+        <div id="sources-tab" class="tab-panel hidden">
+          <div id="sources-content">
+            <!-- Content will be inserted based on media type -->
+          </div>
+        </div>
+
+        <!-- Similar Tab -->
+        <div id="similar-tab" class="tab-panel hidden">
+          <div class="similar-list">
+            <!-- Similar items will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Structure -->
+  <div id="modal" class="fixed inset-0 bg-black/90 z-50 hidden modal-overlay">
+    <div class="modal-content bg-dark rounded-lg overflow-hidden">
+      <div class="modal-header p-4 flex justify-between items-center">
+        <h3 id="modal-title" class="text-lg font-bold"></h3>
+        <button id="close-modal" class="text-white text-2xl">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="aspect-w-16 aspect-h-9 w-full">
+          <iframe id="modal-iframe" class="w-full h-[50vh]" frameborder="0" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TMDB_API_KEY = 'e3afd4c89e3351edad9e875ff7a01f0c';
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+    const DEFAULT_POSTER = 'https://github.com/animeneek/MN/raw/main/assets/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
+    const JSON_SOURCES_URL = 'https://raw.githubusercontent.com/animeneek/MovieNeek/main/MovieNeek.json';
+    
+    let mediaType = 'movie';
+    let mediaId = 0;
+    let currentSeason = 1;
+    let mediaInfo = null;
+    let jsonSources = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      mediaType = urlParams.get('type') || 'movie';
+      mediaId = parseInt(urlParams.get('id')) || 0;
+      
+      if (!mediaId) {
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      await fetchHeader();
+      await loadJsonSources();
+      await loadMediaInfo();
+      setupTabs();
+      setupModal();
+    });
+
+    async function fetchHeader() {
+      try {
+        const response = await fetch('header.html');
+        const data = await response.text();
+        document.getElementById('header').innerHTML = data;
+      } catch (error) {
+        console.error('Error loading header:', error);
+      }
+    }
+
+    async function loadJsonSources() {
+      try {
+        const response = await fetch(JSON_SOURCES_URL);
+        jsonSources = await response.json();
+      } catch (error) {
+        console.error('Error loading JSON sources:', error);
+        jsonSources = [];
+      }
+    }
+
+    function createEmbedUrl(src, videoId) {
+      switch(src) {
+        case 'streamtape': return `https://streamtape.com/e/${videoId}`;
+        case 'streamwish': return `https://streamwish.to/e/${videoId}`;
+        case 'mp4upload': return `https://mp4upload.com/v/${videoId}`;
+        case 'other1': return `https://otherone.com/e/${videoId}`;
+        case 'other2': return `https://othertwo.com/e/${videoId}`;
+        default: return `https://${src}.com/e/${videoId}`;
+      }
+    }
+
+    async function loadMediaInfo() {
+      try {
+        mediaInfo = await fetchTMDB(`/${mediaType}/${mediaId}`);
+        const credits = await fetchTMDB(`/${mediaType}/${mediaId}/credits`);
+        const similar = await fetchTMDB(`/${mediaType}/${mediaId}/similar`);
+        const videos = await fetchTMDB(`/${mediaType}/${mediaId}/videos`);
+        
+        updateMediaInfo(mediaInfo, credits, similar, videos);
+        
+        if (mediaType === 'tv') {
+          await loadSeasonsInfo(mediaInfo);
+          document.getElementById('sources-tab-label').textContent = 'Seasons';
+        } else {
+          setupMovieSources();
+          document.getElementById('sources-tab-label').textContent = 'Watch Here';
+        }
+      } catch (error) {
+        console.error('Error loading media info:', error);
+        document.getElementById('poster-container').innerHTML = `
+          <div class="text-center p-8">
+            <i class="fas fa-exclamation-triangle text-4xl text-primary mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Error loading content</h2>
+            <p class="text-gray-400 mb-4">Please try again later</p>
+            <a href="index.html" class="inline-block bg-primary hover:bg-red-600 px-6 py-2 rounded-full">
+              Back to Home
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    function setupMovieSources() {
+      const sourcesContent = document.getElementById('sources-content');
+      const mediaSources = jsonSources.find(item => 
+        item.TMDBID === mediaId && item.Class === 'movie'
+      );
+
+      let sourcesHTML = '<div class="flex flex-wrap gap-4">';
+      
+      // Default source
+      sourcesHTML += `
+        <button class="source-btn bg-primary hover:bg-red-600 px-4 py-2 rounded-lg font-medium"
+                data-source="https://player.embed-api.stream/?id=${mediaId}&type=movie">
+          Default Source
+        </button>
+      `;
+      
+      // Add JSON sources if available
+      if (mediaSources) {
+        sourcesHTML += '<h3 class="w-full text-lg font-semibold mb-2">Additional Sources</h3>';
+        mediaSources.SRC.forEach((src, i) => {
+          const sourceName = mediaSources.Source[i] || `Source ${i+2}`;
+          const videoId = mediaSources.VIDEOID[i];
+          if (videoId) {
+            sourcesHTML += `
+              <button class="source-btn bg-primary hover:bg-red-600 px-4 py-2 rounded-lg font-medium"
+                      data-source="${createEmbedUrl(src, videoId)}">
+                ${sourceName}
+              </button>
+            `;
+          }
+        });
+      }
+      
+      sourcesHTML += '</div>';
+      sourcesContent.innerHTML = sourcesHTML;
+      
+      document.querySelectorAll('.source-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          showModal(
+            `${mediaInfo.title}`, 
+            this.getAttribute('data-source')
+          );
+        });
+      });
+    }
+
+    async function loadSeasonsInfo(showInfo) {
+      try {
+        const seasonsContainer = document.getElementById('sources-content');
+        const seasons = showInfo.seasons.filter(s => s.season_number > 0);
+        const mediaSources = jsonSources.find(item => 
+          item.TMDBID === mediaId && item.Class === 'series'
+        );
+
+        let seasonsHTML = '';
+        
+        // Add additional sources if available
+        if (mediaSources) {
+          seasonsHTML += '<div class="mb-6"><h3 class="text-lg font-semibold mb-3">Additional Sources</h3>';
+          seasonsHTML += '<div class="flex flex-wrap gap-3">';
+          
+          mediaSources.SRC.forEach((src, i) => {
+            const sourceName = mediaSources.Source[i];
+            const videoId = mediaSources.VIDEOID[i];
+            
+            if (videoId && sourceName) {
+              seasonsHTML += `
+                <button class="source-btn bg-primary hover:bg-red-600 px-4 py-2 rounded-lg font-medium"
+                        data-source="${createEmbedUrl(src, videoId)}"
+                        data-title="${mediaInfo.name} - ${sourceName}">
+                  ${sourceName}
+                </button>
+              `;
+            }
+          });
+          
+          seasonsHTML += '</div></div>';
+        }
+        
+        seasonsHTML += `
+          <div class="season-selector flex gap-3 overflow-x-auto pb-4 mb-6">
+            ${seasons.map(season => `
+              <button class="season-btn min-w-[80px] px-4 py-2 rounded-full bg-dark hover:bg-[#ff4444] ${season.season_number === 1 ? 'bg-primary hover:bg-red-600' : ''}"
+                      data-season="${season.season_number}">
+                ${season.name}
+              </button>
+            `).join('')}
+          </div>
+          <div id="season-details-container"></div>
+        `;
+        
+        seasonsContainer.innerHTML = seasonsHTML;
+        
+        document.querySelectorAll('.season-btn').forEach(btn => {
+          btn.addEventListener('click', async function() {
+            document.querySelectorAll('.season-btn').forEach(b => {
+              b.classList.remove('bg-primary', 'hover:bg-red-600');
+              b.classList.add('bg-dark', 'hover:bg-[#ff4444]');
+            });
+            this.classList.add('bg-primary', 'hover:bg-red-600');
+            this.classList.remove('bg-dark', 'hover:bg-[#ff4444]');
+            
+            currentSeason = parseInt(this.getAttribute('data-season'));
+            await loadSeasonDetails(showInfo.id, currentSeason);
+          });
+        });
+        
+        // Add click handlers for series sources
+        document.querySelectorAll('.source-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            showModal(
+              this.getAttribute('data-title'),
+              this.getAttribute('data-source')
+            );
+          });
+        });
+        
+        if (seasons.length > 0) {
+          await loadSeasonDetails(showInfo.id, 1);
+        }
+      } catch (error) {
+        console.error('Error loading seasons:', error);
+      }
+    }
+
+    async function loadSeasonDetails(showId, seasonNumber) {
+      try {
+        const seasonInfo = await fetchTMDB(`/tv/${showId}/season/${seasonNumber}`);
+        const seasonPoster = seasonInfo.poster_path 
+          ? IMAGE_URL + seasonInfo.poster_path 
+          : mediaInfo.poster_path 
+            ? IMAGE_URL + mediaInfo.poster_path 
+            : DEFAULT_POSTER;
+        
+        let episodesHTML = '';
+        
+        seasonInfo.episodes.forEach(episode => {
+          const episodePoster = episode.still_path 
+            ? IMAGE_URL + episode.still_path 
+            : seasonPoster;
+            
+          episodesHTML += `
+            <div class="episode-card mb-4">
+              <div class="flex gap-4">
+                <div class="w-1/3 flex-shrink-0">
+                  <img src="${episodePoster}" 
+                       alt="${episode.name}"
+                       class="w-full h-auto rounded-lg">
+                </div>
+                <div class="w-2/3 py-2">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h4 class="font-semibold">${episode.episode_number}. ${episode.name}</h4>
+                    <span class="text-xs text-gray-400">${formatRuntime(episode.runtime)}</span>
+                  </div>
+                  <p class="text-sm text-gray-300 line-clamp-3">${episode.overview || 'No description available.'}</p>
+                  <div class="text-xs text-gray-400 mt-2">Aired: ${episode.air_date || 'Unknown'}</div>
+                  <button class="source-btn mt-2 bg-primary hover:bg-red-600 px-4 py-1 rounded text-sm"
+                          data-source="https://player.embed-api.stream/?id=${mediaId}&s=${seasonNumber}&e=${episode.episode_number}"
+                          data-title="${mediaInfo.name} - S${seasonNumber}E${episode.episode_number} - ${episode.name}">
+                    Watch Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        document.getElementById('season-details-container').innerHTML = `
+          <div class="flex items-center gap-4 mb-4">
+            <img src="${seasonPoster}" 
+                 alt="${seasonInfo.name}" 
+                 class="w-20 h-auto rounded-lg">
+            <div>
+              <h3 class="text-xl font-bold">${seasonInfo.name}</h3>
+              <p class="text-gray-300">${seasonInfo.air_date ? seasonInfo.air_date.substring(0,4) : ''} • ${seasonInfo.episodes.length} Episodes</p>
+            </div>
+          </div>
+          <p class="text-gray-300 mb-6">${seasonInfo.overview || 'No overview available.'}</p>
+          
+          <h4 class="font-semibold mb-3">Episodes</h4>
+          <div id="episodes-list" class="space-y-4">
+            ${episodesHTML}
+          </div>
+        `;
+        
+        document.querySelectorAll('.source-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            showModal(
+              this.getAttribute('data-title'),
+              this.getAttribute('data-source')
+            );
+          });
+        });
+      } catch (error) {
+        console.error('Error loading season details:', error);
+      }
+    }
+
+    function updateMediaInfo(info, credits, similar, videos) {
+      document.title = `${info.title || info.name} | MovieNeek`;
+      
+      const posterUrl = info.poster_path 
+        ? IMAGE_URL + info.poster_path
+        : DEFAULT_POSTER;
+      document.getElementById('poster-image').src = posterUrl;
+      document.getElementById('poster-image').alt = info.title || info.name;
+      
+      const ratingPercentage = Math.round(info.vote_average * 10);
+      const ratingCircle = document.getElementById('rating-circle');
+      ratingCircle.setAttribute('data-rating', `${ratingPercentage}%`);
+      ratingCircle.style.setProperty('--percentage', ratingPercentage);
+      
+      document.getElementById('title').textContent = info.title || info.name;
+      
+      const releaseDate = mediaType === 'movie' ? info.release_date : info.first_air_date;
+      const year = releaseDate ? releaseDate.substring(0,4) : 'N/A';
+      const runtime = mediaType === 'movie' 
+        ? formatRuntime(info.runtime)
+        : `${info.number_of_seasons} Season${info.number_of_seasons !== 1 ? 's' : ''}`;
+      
+      document.getElementById('year').textContent = year;
+      document.getElementById('runtime').textContent = runtime;
+      
+      if (mediaType === 'movie' && info.release_dates) {
+        const usRelease = info.release_dates.results.find(r => r.iso_3166_1 === 'US');
+        if (usRelease) {
+          const certification = usRelease.release_dates[0]?.certification || '';
+          document.getElementById('certification').textContent = certification;
+        }
+      } else {
+        document.getElementById('certification').textContent = info.adult ? '18+' : 'PG';
+      }
+      
+      const genresContainer = document.getElementById('genres');
+      genresContainer.innerHTML = info.genres.map(genre => `
+        <span class="bg-dark text-white px-3 py-1 rounded-full text-xs">${genre.name}</span>
+      `).join('');
+      
+      document.getElementById('overview').textContent = info.overview || 'No overview available.';
+      document.getElementById('status').textContent = info.status || 'Unknown';
+      document.getElementById('language').textContent = getLanguageName(info.original_language);
+      
+      const director = credits.crew.find(person => person.job === 'Director');
+      const writer = credits.crew.find(person => person.job === 'Writer' || person.department === 'Writing');
+      
+      if (director) {
+        document.getElementById('director').innerHTML = `
+          <a href="people.html?id=${director.id}" class="hover:text-primary">${director.name}</a>
+        `;
+      }
+      
+      if (writer) {
+        document.getElementById('writer').innerHTML = `
+          <a href="people.html?id=${writer.id}" class="hover:text-primary">${writer.name}</a>
+        `;
+      }
+      
+      const castContainer = document.querySelector('#cast-tab .cast-scroll');
+      const mainCast = credits.cast.slice(0, 10);
+      castContainer.innerHTML = mainCast.map(person => `
+        <div class="cast-member flex-shrink-0 w-24 text-center">
+          <a href="people.html?id=${person.id}">
+            <div class="w-20 h-20 rounded-full overflow-hidden mx-auto mb-2">
+              <img src="${person.profile_path ? IMAGE_URL + person.profile_path : 'https://via.placeholder.com/200x200?text=No+Image'}" 
+                   alt="${person.name}"
+                   class="w-full h-full object-cover">
+            </div>
+            <h4 class="font-medium text-sm truncate">${person.name}</h4>
+            <p class="text-xs text-gray-400 truncate">${person.character || ''}</p>
+          </a>
+        </div>
+      `).join('');
+      
+      // Updated Similar tab - vertical list
+      const similarContainer = document.querySelector('#similar-tab .similar-list');
+      similarContainer.innerHTML = similar.results.slice(0, 10).map(item => {
+        const isMovie = item.media_type === 'movie' || (mediaType === 'movie' && !item.media_type) || (item.title && !item.name);
+        const title = isMovie ? (item.title || 'Untitled Movie') : (item.name || 'Untitled TV Show');
+        const date = isMovie ? item.release_date : item.first_air_date;
+        const year = date ? date.substring(0,4) : 'N/A';
+        const percentage = item.vote_average ? Math.round(item.vote_average * 10) : 0;
+        const posterUrl = item.poster_path ? IMAGE_URL + item.poster_path : DEFAULT_POSTER;
+        
+        return `
+          <div class="similar-item fade-in">
+            <a href="info.html?id=${item.id}&type=${isMovie ? 'movie' : 'tv'}" class="similar-poster">
+              <div class="movie-poster aspect-[2/3] bg-dark rounded-lg overflow-hidden">
+                <img src="${posterUrl}" 
+                     alt="${title}"
+                     class="w-full h-full object-cover"
+                     loading="lazy">
+                ${percentage > 0 ? `
+                  <div class="rating-circle" data-rating="${percentage}%" style="--percentage: ${percentage}"></div>
+                ` : ''}
+              </div>
+            </a>
+            <div>
+              <h3 class="font-medium">${title}</h3>
+              <p class="text-sm text-gray-400">${year}</p>
+              <p class="text-sm text-gray-300 mt-1 line-clamp-2">${item.overview || ''}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      const trailerBtn = document.getElementById('watch-trailer');
+      const trailer = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+      if (trailer) {
+        trailerBtn.addEventListener('click', () => {
+          showModal(
+            `${info.title || info.name} Trailer`,
+            `https://www.youtube.com/embed/${trailer.key}?autoplay=1`
+          );
+        });
+      } else {
+        trailerBtn.disabled = true;
+        trailerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.tab-button');
+      const panels = document.querySelectorAll('.tab-panel');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          const tabName = this.getAttribute('data-tab');
+          panels.forEach(panel => panel.classList.add('hidden'));
+          document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        });
+      });
+    }
+
+    function setupModal() {
+      const modal = document.getElementById('modal');
+      const closeBtn = document.getElementById('close-modal');
+      const iframe = document.getElementById('modal-iframe');
+      
+      closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        iframe.src = '';
+      });
+    }
+
+    function showModal(title, url) {
+      const modal = document.getElementById('modal');
+      const iframe = document.getElementById('modal-iframe');
+      const modalTitle = document.getElementById('modal-title');
+      
+      modalTitle.textContent = title;
+      iframe.src = url;
+      modal.classList.remove('hidden');
+    }
+
+    // Helper functions
+    async function fetchTMDB(endpoint) {
+      const res = await fetch(`${BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}`);
+      return await res.json();
+    }
+
+    function formatRuntime(minutes) {
+      if (!minutes) return 'N/A';
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours}h ${mins}m`;
+    }
+
+    function getLanguageName(code) {
+      const languages = {
+        en: 'English',
+        hi: 'Hindi',
+        es: 'Spanish',
+        fr: 'French',
+        de: 'German',
+        it: 'Italian',
+        ja: 'Japanese',
+        ko: 'Korean',
+        zh: 'Chinese',
+        ru: 'Russian',
+        te: 'Telugu',
+        ta: 'Tamil',
+        kn: 'Kannada',
+        ml: 'Malayalam'
+      };
+      return languages[code] || code.toUpperCase();
+    }
+  </script>
+</body>
+</html>

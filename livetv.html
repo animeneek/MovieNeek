@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieNeek | Live TV</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .channel-card {
+      background: #222;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .channel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(255, 68, 68, 0.2);
+    }
+    .channel-logo-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+    }
+    .channel-logo {
+      max-width: 100%;
+      max-height: 120px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+    .channel-name {
+      text-align: center;
+      font-weight: 500;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      word-break: break-word;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-overlay {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+    }
+    .modal-header {
+      background: #222;
+      border-bottom: 1px solid #333;
+    }
+    #modal-video {
+      background-color: #000;
+      width: 100%;
+    }
+    .channel-group-title {
+      position: sticky;
+      top: 80px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 0;
+      z-index: 10;
+    }
+    #playerjs-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="bg-black text-white">
+
+  <!-- Header -->  
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="pb-20 pt-4">
+    <div class="container mx-auto px-4">
+      <h1 class="text-3xl font-bold mb-6 sticky top-16 bg-black py-4 z-10">Live TV Channels</h1>
+      
+      <!-- Alphabetical Channel Groups -->
+      <div id="channelGroups" class="space-y-8">
+        <!-- Groups will be loaded here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Structure -->
+  <div id="modal" class="fixed inset-0 bg-black/90 z-50 hidden modal-overlay">
+    <div class="modal-content bg-dark rounded-lg overflow-hidden">
+      <div class="modal-header p-4 flex justify-between items-center">
+        <h3 id="modal-title" class="text-lg font-bold"></h3>
+        <button id="close-modal" class="text-white text-2xl hover:text-primary transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="aspect-w-16 aspect-h-9 w-full">
+          <iframe id="modal-iframe" class="w-full h-[50vh] hidden" frameborder="0" allowfullscreen></iframe>
+          <video id="modal-video" class="w-full h-[50vh] hidden" controls autoplay></video>
+          <div id="playerjs-container" class="w-full h-[50vh] hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_LOGO = 'https://github.com/animeneek/MN/raw/main/assets/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
+    let sources = {};
+    let playerjsLoaded = false;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await fetchHeader();
+      await loadSources();
+      renderChannelGroups();
+      setupModal();
+    });
+
+    async function fetchHeader() {
+      try {
+        const response = await fetch('header.html');
+        const data = await response.text();
+        document.getElementById('header').innerHTML = data;
+      } catch (error) {
+        console.error('Error loading header:', error);
+      }
+    }
+
+    async function loadSources() {
+      try {
+        const response = await fetch('sources.json');
+        sources = await response.json();
+      } catch (error) {
+        console.error('Error loading sources:', error);
+        // Fallback data if sources.json fails
+        sources = {
+          "asports": {
+            "name": "A Sports",
+            "src": "https://cdn.crichdplays.ru/embed2.php?id=asports",
+            "img": "https://cdn.crichdplays.ru/asports.jpg"
+          },
+          "astrocric": {
+            "name": "Astrocric",
+            "src": "https://cdn.crichdplays.ru/embed2.php?id=astrocric",
+            "img": "https://cdn.crichdplays.ru/astrocric.jpg"
+          },
+          "actionmax": {
+            "name": "Action Max",
+            "src": "https://playlist.fasttvcdn.com/pl/aipomvl0iozr0ha530i0xw/Aflam/playlist/0.m3u8",
+            "img": "https://bx-tv.com/wp-content/uploads/2021/07/action-max.jpg"
+          }
+        };
+      }
+    }
+
+    function renderChannelGroups() {
+      const groupsContainer = document.getElementById('channelGroups');
+      
+      // Group channels by first letter
+      const groupedChannels = {};
+      Object.keys(sources).forEach(key => {
+        const firstLetter = sources[key].name.charAt(0).toUpperCase();
+        if (!groupedChannels[firstLetter]) {
+          groupedChannels[firstLetter] = [];
+        }
+        groupedChannels[firstLetter].push({
+          id: key,
+          ...sources[key]
+        });
+      });
+      
+      // Sort letters alphabetically
+      const sortedLetters = Object.keys(groupedChannels).sort();
+      
+      // Create a group for each letter
+      sortedLetters.forEach(letter => {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'fade-in';
+        
+        const letterHeading = document.createElement('h2');
+        letterHeading.className = 'channel-group-title text-2xl font-bold mb-4';
+        letterHeading.textContent = letter;
+        
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4';
+        
+        // Sort channels in this group alphabetically
+        groupedChannels[letter].sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Add each channel in this group
+        groupedChannels[letter].forEach(channel => {
+          const channelCard = document.createElement('div');
+          channelCard.className = 'channel-card cursor-pointer';
+          
+          channelCard.innerHTML = `
+            <div class="channel-logo-container">
+              <img src="${channel.img || DEFAULT_LOGO}" 
+                   alt="${channel.name}" 
+                   class="channel-logo"
+                   loading="lazy">
+            </div>
+            <h3 class="channel-name">${channel.name}</h3>
+          `;
+          
+          channelCard.addEventListener('click', () => {
+            showModal(channel.name, channel.src);
+          });
+          
+          gridDiv.appendChild(channelCard);
+        });
+        
+        groupDiv.appendChild(letterHeading);
+        groupDiv.appendChild(gridDiv);
+        groupsContainer.appendChild(groupDiv);
+      });
+    }
+
+    function setupModal() {
+      const modal = document.getElementById('modal');
+      const closeBtn = document.getElementById('close-modal');
+      const iframe = document.getElementById('modal-iframe');
+      const video = document.getElementById('modal-video');
+      const playerjsContainer = document.getElementById('playerjs-container');
+      
+      closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        iframe.src = '';
+        video.src = '';
+        playerjsContainer.innerHTML = '';
+        if (video.hls) {
+          video.hls.destroy();
+          video.hls = null;
+        }
+      });
+      
+      // Close modal when clicking outside content
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+          iframe.src = '';
+          video.src = '';
+          playerjsContainer.innerHTML = '';
+          if (video.hls) {
+            video.hls.destroy();
+            video.hls = null;
+          }
+        }
+      });
+    }
+
+    function loadPlayerJS(url, containerId) {
+      return new Promise((resolve) => {
+        if (window.Playerjs) {
+          resolve();
+          return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://bx-tv.com/bxtv1-playerjs.js';
+        script.onload = () => resolve();
+        script.onerror = () => {
+          console.error('Failed to load PlayerJS');
+          resolve();
+        };
+        document.body.appendChild(script);
+      }).then(() => {
+        if (window.Playerjs) {
+          const playerId = 'playerjs-' + Date.now();
+          const playerDiv = document.createElement('div');
+          playerDiv.id = playerId;
+          document.getElementById(containerId).appendChild(playerDiv);
+          
+          new Playerjs({
+            id: playerId,
+            file: url
+          });
+        } else {
+          console.error('PlayerJS not available after loading');
+        }
+      });
+    }
+
+    function showModal(title, url) {
+      const modal = document.getElementById('modal');
+      const iframe = document.getElementById('modal-iframe');
+      const video = document.getElementById('modal-video');
+      const playerjsContainer = document.getElementById('playerjs-container');
+      const modalTitle = document.getElementById('modal-title');
+      
+      modalTitle.textContent = title;
+      
+      // Reset all players
+      iframe.classList.add('hidden');
+      iframe.src = '';
+      video.classList.add('hidden');
+      video.src = '';
+      playerjsContainer.classList.add('hidden');
+      playerjsContainer.innerHTML = '';
+      
+      if (video.hls) {
+        video.hls.destroy();
+        video.hls = null;
+      }
+
+      // Check for PlayerJS embed pattern
+      if (url.includes('PlayerjsAsync') || url.includes('new Playerjs')) {
+        playerjsContainer.classList.remove('hidden');
+        const playerjsRegex = /file:"([^"]+)"/;
+        const match = url.match(playerjsRegex);
+        if (match && match[1]) {
+          loadPlayerJS(match[1], 'playerjs-container');
+        } else {
+          console.error('Could not extract PlayerJS URL');
+        }
+      }
+      // Check for HLS stream
+      else if (url.includes('.m3u8')) {
+        video.classList.remove('hidden');
+        
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 600,
+            maxBufferSize: 60*1000*1000,
+            maxBufferHole: 5.0
+          });
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play().catch(e => {
+              console.log('Autoplay prevented, showing controls');
+              video.controls = true;
+            });
+          });
+          video.hls = hls;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // For Safari which supports HLS natively
+          video.src = url;
+          video.addEventListener('loadedmetadata', function() {
+            video.play().catch(e => {
+              console.log('Autoplay prevented, showing controls');
+              video.controls = true;
+            });
+          });
+        }
+      }
+      // Check for direct video files (mp4, webm, etc)
+      else if (url.match(/\.(mp4|webm|ogg|mov|mkv|avi|flv|wmv|mpg|mpeg|3gp)$/i)) {
+        video.classList.remove('hidden');
+        video.src = url;
+        video.addEventListener('loadedmetadata', function() {
+          video.play().catch(e => {
+            console.log('Autoplay prevented, showing controls');
+            video.controls = true;
+          });
+        });
+      }
+      // Default to iframe embed
+      else {
+        iframe.classList.remove('hidden');
+        iframe.src = url;
+      }
+      
+      modal.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

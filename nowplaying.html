@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieNeek | Now Playing</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .movie-card {
+      transition: all 0.3s ease;
+      transform-origin: center bottom;
+    }
+    .movie-card:hover {
+      transform: scale(1.05);
+      z-index: 20;
+    }
+    .movie-card-container {
+      position: relative;
+      overflow: visible;
+    }
+    .movie-poster {
+      position: relative;
+      overflow: hidden;
+    }
+    .movie-poster::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30%;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    }
+    .rating-circle {
+      --percentage: 0;
+      --primary: #ff4444;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: 
+        radial-gradient(closest-side, #111 85%, transparent 86%),
+        conic-gradient(var(--primary) calc(var(--percentage)*1%), #222 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      border: 2px solid #111;
+      z-index: 2;
+    }
+    .rating-circle::before {
+      content: attr(data-rating);
+      font-size: 9px;
+      font-weight: bold;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .no-results {
+      background: linear-gradient(to right, rgba(255,68,68,0.1), rgba(255,68,68,0.05));
+    }
+    .toggle-switch {
+      position: relative;
+      width: 120px;
+      height: 32px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #222;
+      border-radius: 9999px;
+      transition: .4s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "Movies";
+      height: 24px;
+      width: 60px;
+      left: 4px;
+      bottom: 4px;
+      background-color: #ff4444;
+      border-radius: 9999px;
+      transition: .4s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(52px);
+      content: "Series";
+    }
+  </style>
+</head>
+<body class="bg-black text-white">
+
+  <!-- Header will be inserted here by JavaScript -->
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 pt-2 pb-8 min-h-screen">
+    <!-- Page Title and Toggle -->
+    <div class="sticky top-20 md:top-16 z-30 bg-black/80 backdrop-blur-sm py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl md:text-3xl font-bold">Now Playing</h1>
+        <label class="toggle-switch">
+          <input type="checkbox" id="content-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="results-grid" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <!-- Results will be inserted here -->
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="hidden text-center py-10">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+    </div>
+    
+    <!-- Load More Button -->
+    <div id="load-more-container" class="text-center mt-6 hidden">
+      <button id="load-more" class="px-6 py-2 bg-primary hover:bg-red-600 rounded-full font-medium">
+        Load More
+      </button>
+    </div>
+  </main>
+
+<script>
+    const TMDB_API_KEY = 'e3afd4c89e3351edad9e875ff7a01f0c';
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+    const DEFAULT_POSTER = 'https://github.com/animeneek/MN/raw/main/assets/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
+    
+    let currentPage = 1;
+    let totalPages = 1;
+    let contentType = 'movie'; // Default to movies
+    let isLoading = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Fetch header first
+      fetch('header.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('header').innerHTML = data;
+          
+          // Setup form submission for search (if header contains search form)
+          document.querySelectorAll('form[action="search.html"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              const query = this.querySelector('input').value.trim();
+              window.location.href = `search.html?query=${encodeURIComponent(query)}`;
+            });
+          });
+          
+          // Then setup the rest of the page
+          setupToggleSwitch();
+          loadNowPlayingContent();
+        })
+        .catch(error => console.error('Error fetching header:', error));
+    });
+
+    function setupToggleSwitch() {
+      const toggle = document.getElementById('content-toggle');
+      toggle.addEventListener('change', function() {
+        contentType = this.checked ? 'tv' : 'movie';
+        currentPage = 1;
+        document.getElementById('results-grid').innerHTML = '';
+        loadNowPlayingContent();
+      });
+    }
+
+    async function loadNowPlayingContent() {
+      if (isLoading) return;
+      
+      const resultsContainer = document.getElementById('results-grid');
+      const loading = document.getElementById('loading');
+      const loadMoreBtn = document.getElementById('load-more-container');
+      
+      loading.classList.remove('hidden');
+      loadMoreBtn.classList.add('hidden');
+      isLoading = true;
+      
+      try {
+        const endpoint = contentType === 'movie' ? '/movie/now_playing' : '/tv/on_the_air';
+        const response = await fetch(`${BASE_URL}${endpoint}?page=${currentPage}&api_key=${TMDB_API_KEY}`);
+        const data = await response.json();
+        
+        totalPages = data.total_pages || 1;
+        const results = data.results || [];
+        
+        if (results.length > 0) {
+          displayResults(results);
+          
+          if (currentPage < totalPages) {
+            loadMoreBtn.classList.remove('hidden');
+          }
+        } else if (currentPage === 1) {
+          showNoResults();
+        }
+      } catch (error) {
+        console.error('Error loading now playing content:', error);
+        showError();
+      } finally {
+        loading.classList.add('hidden');
+        isLoading = false;
+      }
+    }
+
+    function displayResults(results) {
+      const container = document.getElementById('results-grid');
+      
+      results.forEach(item => {
+        const card = createResultCard(item);
+        if (card) container.appendChild(card);
+      });
+    }
+
+    function createResultCard(item) {
+      const div = document.createElement('div');
+      div.className = 'movie-card-container fade-in';
+      
+      const title = contentType === 'movie' ? item.title : item.name;
+      const date = contentType === 'movie' ? item.release_date : item.first_air_date;
+      const year = date ? date.substring(0,4) : 'N/A';
+      const percentage = item.vote_average ? Math.round(item.vote_average * 10) : 0;
+      
+      div.innerHTML = `
+        <div class="movie-card w-40 sm:w-48 md:w-56">
+          <a href="info.html?id=${item.id}&type=${contentType}" class="block relative">
+            <div class="movie-poster aspect-[2/3] bg-dark rounded-lg overflow-hidden mb-2">
+              <img 
+                src="${item.poster_path ? IMAGE_URL + item.poster_path : DEFAULT_POSTER}" 
+                alt="${title}"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              >
+              ${percentage > 0 ? `
+                <div class="rating-circle" data-rating="${percentage}%" style="--percentage: ${percentage}"></div>
+              ` : ''}
+            </div>
+            <h3 class="font-medium truncate">${title}</h3>
+            <p class="text-xs text-gray-400">${year}</p>
+          </a>
+        </div>
+      `;
+      
+      return div;
+    }
+
+    function showNoResults() {
+      document.getElementById('results-grid').innerHTML = `
+        <div class="col-span-full no-results rounded-lg p-8 text-center">
+          <i class="fas fa-film fa-3x mb-4 text-primary/50"></i>
+          <h3 class="text-xl font-bold mb-2">No results found</h3>
+          <p class="text-gray-400">Please try again later</p>
+        </div>
+      `;
+    }
+
+    function showError() {
+      document.getElementById('results-grid').innerHTML = `
+        <div class="col-span-full text-center py-20 text-gray-400">
+          <i class="fas fa-exclamation-circle fa-2x mb-4"></i>
+          <p>Error loading results. Please try again.</p>
+        </div>
+      `;
+    }
+
+    // Load more button event
+    document.getElementById('load-more').addEventListener('click', () => {
+      currentPage++;
+      loadNowPlayingContent();
+    });
+</script>
+  
+</body>
+</html>

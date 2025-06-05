@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieNeek | Person</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .person-image {
+      aspect-ratio: 2/3;
+      object-fit: cover;
+    }
+    .cast-scroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .cast-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .tab-button {
+      transition: all 0.2s ease;
+    }
+    .tab-button.active {
+      color: #ff4444;
+      border-bottom: 2px solid #ff4444;
+    }
+    .movie-card {
+      transition: all 0.3s ease;
+    }
+    .movie-card:hover {
+      transform: scale(1.03);
+    }
+    .rating-circle {
+      --percentage: 0;
+      --primary: #ff4444;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: 
+        radial-gradient(closest-side, #111 85%, transparent 86%),
+        conic-gradient(var(--primary) calc(var(--percentage)*1%), #222 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      border: 2px solid #111;
+      z-index: 2;
+    }
+    .rating-circle::before {
+      content: attr(data-rating);
+      font-size: 9px;
+      font-weight: bold;
+    }
+    .movie-poster {
+      position: relative;
+    }
+    .tab-container {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+  </style>
+</head>
+<body class="bg-black text-white">
+
+  <!-- Header -->
+  <div id="header"></div>
+
+  <!-- Main Content -->
+  <main class="pb-20 pt-4">
+    <div class="container mx-auto px-4">
+      <div class="person-grid grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+        <!-- Image Column -->
+        <div class="person-image-container md:col-span-1">
+          <div class="person-image bg-dark rounded-lg overflow-hidden shadow-lg w-full">
+            <img id="person-image" class="w-full h-full object-cover" src="" alt="">
+          </div>
+        </div>
+
+        <!-- Info Column -->
+        <div class="person-info md:col-span-3">
+          <h1 id="person-name" class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"></h1>
+          
+          <!-- Personal Info -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <h4 class="text-sm text-gray-400">Known For</h4>
+              <p id="known-for" class="font-medium"></p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Gender</h4>
+              <p id="gender" class="font-medium"></p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Birthday</h4>
+              <p id="birthday" class="font-medium"></p>
+            </div>
+            <div>
+              <h4 class="text-sm text-gray-400">Place of Birth</h4>
+              <p id="birthplace" class="font-medium"></p>
+            </div>
+          </div>
+
+          <!-- Biography -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Biography</h3>
+            <div id="biography" class="text-gray-300"></div>
+            <button id="read-more" class="text-primary text-sm mt-2 hidden">Read more</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs Container -->
+      <div id="tabs-container" class="border-b border-gray-800 mt-8 mb-6">
+        <div class="tab-container">
+          <!-- Tabs will be dynamically inserted here -->
+        </div>
+      </div>
+
+      <!-- Tab Content Container -->
+      <div id="tab-content-container">
+        <!-- Tab content will be dynamically inserted here -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const TMDB_API_KEY = 'e3afd4c89e3351edad9e875ff7a01f0c';
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const IMAGE_URL = 'https://image.tmdb.org/t/p/w500';
+    const DEFAULT_PROFILE = 'https://github.com/animeneek/MN/raw/main/assets/Black%20and%20White%20Modern%20Coming%20soon%20Poster.png';
+    
+    let personId = 0;
+    let personInfo = null;
+    let combinedCredits = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      personId = parseInt(urlParams.get('id')) || 0;
+      
+      if (!personId) {
+        window.location.href = 'index.html';
+        return;
+      }
+      
+      await fetchHeader();
+      await loadPersonInfo();
+    });
+
+    async function fetchHeader() {
+      try {
+        const response = await fetch('header.html');
+        const data = await response.text();
+        document.getElementById('header').innerHTML = data;
+      } catch (error) {
+        console.error('Error loading header:', error);
+      }
+    }
+
+    async function loadPersonInfo() {
+      try {
+        personInfo = await fetchTMDB(`/person/${personId}`);
+        combinedCredits = await fetchTMDB(`/person/${personId}/combined_credits`);
+        
+        updatePersonInfo();
+        createDynamicTabs();
+      } catch (error) {
+        console.error('Error loading person info:', error);
+        document.getElementById('person-image-container').innerHTML = `
+          <div class="text-center p-8">
+            <i class="fas fa-exclamation-triangle text-4xl text-primary mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Error loading content</h2>
+            <p class="text-gray-400 mb-4">Please try again later</p>
+            <a href="index.html" class="inline-block bg-primary hover:bg-red-600 px-6 py-2 rounded-full">
+              Back to Home
+            </a>
+          </div>
+        `;
+      }
+    }
+
+    function updatePersonInfo() {
+      document.title = `${personInfo.name} | MovieNeek`;
+      
+      const profileUrl = personInfo.profile_path 
+        ? IMAGE_URL + personInfo.profile_path
+        : DEFAULT_PROFILE;
+      document.getElementById('person-image').src = profileUrl;
+      document.getElementById('person-image').alt = personInfo.name;
+      
+      document.getElementById('person-name').textContent = personInfo.name;
+      document.getElementById('known-for').textContent = personInfo.known_for_department || 'N/A';
+      document.getElementById('gender').textContent = getGender(personInfo.gender);
+      document.getElementById('birthday').textContent = personInfo.birthday || 'N/A';
+      document.getElementById('birthplace').textContent = personInfo.place_of_birth || 'N/A';
+      
+      const biography = document.getElementById('biography');
+      biography.textContent = personInfo.biography || 'No biography available.';
+      
+      if (personInfo.biography && personInfo.biography.length > 500) {
+        biography.textContent = personInfo.biography.substring(0, 500) + '...';
+        document.getElementById('read-more').classList.remove('hidden');
+        document.getElementById('read-more').addEventListener('click', () => {
+          biography.textContent = personInfo.biography;
+          document.getElementById('read-more').classList.add('hidden');
+        });
+      }
+    }
+
+    function createDynamicTabs() {
+      const tabsContainer = document.getElementById('tabs-container').querySelector('.tab-container');
+      const contentContainer = document.getElementById('tab-content-container');
+      
+      // Group credits by department
+      const departments = {};
+      
+      // Always include Acting if they have acting credits
+      if (combinedCredits.cast.length > 0) {
+        departments['Acting'] = combinedCredits.cast;
+      }
+      
+      // Group crew credits by department
+      combinedCredits.crew.forEach(credit => {
+        if (!departments[credit.department]) {
+          departments[credit.department] = [];
+        }
+        departments[credit.department].push(credit);
+      });
+      
+      // Create tabs for each department with credits
+      const tabs = [];
+      const tabContents = [];
+      
+      Object.entries(departments).forEach(([department, credits], index) => {
+        const isActive = index === 0;
+        const tabId = department.toLowerCase().replace(/\s+/g, '-');
+        
+        // Create tab button
+        tabs.push(`
+          <button class="tab-button px-4 py-2 font-medium ${isActive ? 'active' : ''}" 
+                  data-tab="${tabId}">
+            ${department} (${credits.length})
+          </button>
+        `);
+        
+        // Create tab content
+        const sortedCredits = [...credits].sort((a, b) => {
+          const dateA = a.release_date || a.first_air_date || '';
+          const dateB = b.release_date || b.first_air_date || '';
+          return dateB.localeCompare(dateA); // Newest first
+        });
+        
+        tabContents.push(`
+          <div id="${tabId}-tab" class="tab-panel ${isActive ? 'block' : 'hidden'}">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              ${sortedCredits.map(credit => createCreditCard(credit, department)).join('')}
+            </div>
+          </div>
+        `);
+      });
+      
+      // Insert tabs and content
+      tabsContainer.innerHTML = tabs.join('');
+      contentContainer.innerHTML = tabContents.join('');
+      
+      // Setup tab switching
+      setupTabs();
+    }
+
+    function createCreditCard(credit, department) {
+      const isMovie = credit.media_type === 'movie' || (credit.title && !credit.name);
+      const title = isMovie ? credit.title : credit.name;
+      const date = isMovie ? credit.release_date : credit.first_air_date;
+      const year = date ? date.substring(0,4) : 'N/A';
+      const percentage = credit.vote_average ? Math.round(credit.vote_average * 10) : 0;
+      const posterUrl = credit.poster_path ? IMAGE_URL + credit.poster_path : DEFAULT_PROFILE;
+      const role = department === 'Acting' 
+        ? credit.character || 'Actor'
+        : credit.job || department;
+      
+      return `
+        <div class="movie-card fade-in">
+          <a href="info.html?id=${credit.id}&type=${isMovie ? 'movie' : 'tv'}" class="block">
+            <div class="movie-poster aspect-[2/3] bg-dark rounded-lg overflow-hidden mb-2">
+              <img src="${posterUrl}" 
+                   alt="${title}"
+                   class="w-full h-full object-cover"
+                   loading="lazy">
+              ${percentage > 0 ? `
+                <div class="rating-circle" data-rating="${percentage}%" style="--percentage: ${percentage}"></div>
+              ` : ''}
+            </div>
+            <h3 class="font-medium truncate">${title}</h3>
+            <p class="text-xs text-gray-400">${year}</p>
+            <p class="text-xs text-gray-300 truncate">${role}</p>
+          </a>
+        </div>
+      `;
+    }
+
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.tab-button');
+      const panels = document.querySelectorAll('.tab-panel');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          tabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          this.classList.add('active');
+          
+          const tabName = this.getAttribute('data-tab');
+          // Hide all panels
+          panels.forEach(panel => panel.classList.add('hidden'));
+          // Show selected panel
+          document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        });
+      });
+    }
+
+    // Helper functions
+    async function fetchTMDB(endpoint) {
+      const res = await fetch(`${BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}`);
+      return await res.json();
+    }
+
+    function getGender(genderCode) {
+      switch(genderCode) {
+        case 1: return 'Female';
+        case 2: return 'Male';
+        case 3: return 'Non-binary';
+        default: return 'Not specified';
+      }
+    }
+  </script>
+</body>
+</html>

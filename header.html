@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MovieNeek</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#222',
+            primary: '#ff4444',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .glass-nav {
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(20, 20, 20, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <!-- Desktop Header -->
+  <header class="glass-nav fixed top-0 left-0 right-0 z-50 hidden md:block">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" class="flex items-center">
+        <img 
+          src="https://github.com/animeneek/MN/blob/main/assets/Movieneek_Raider%20Crusader_001.png?raw=true" 
+          alt="MovieNeek Logo" 
+          class="h-9 w-auto"
+        >
+      </a>
+      <div class="flex-1 max-w-xl mx-4">
+        <form action="search.html" method="GET" class="relative">
+          <input
+            type="text"
+            name="query"
+            placeholder="Search movies, series..."
+            class="w-full bg-dark text-white px-4 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-primary text-sm placeholder-gray-400"
+          >
+          <button type="submit" class="absolute right-3 top-2 text-gray-400 hover:text-primary">
+            <i class="fas fa-search fa-sm"></i>
+          </button>
+        </form>
+      </div>
+      <nav class="flex space-x-6">
+        <a href="javascript:void(0)" onclick="getRandomMedia()" class="text-gray-300 hover:text-primary text-sm font-medium">
+          Random
+        </a>
+        <a href="search.html?query=" class="text-gray-300 hover:text-primary text-sm font-medium">Browse</a>
+        <a href="livetv.html" class="text-gray-300 hover:text-primary text-sm font-medium">Live TV</a>
+        <a href="https://animeneek.github.io/AnimeNeek" class="text-gray-300 hover:text-primary text-sm font-medium">Anime</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Mobile Header -->
+  <div class="md:hidden glass-nav fixed top-0 left-0 right-0 z-40 pt-3 pb-3 px-4">
+    <a href="index.html" class="flex justify-center mb-3">
+      <img 
+        src="https://github.com/animeneek/MN/blob/main/assets/Movieneek_Raider%20Crusader_001.png?raw=true" 
+        alt="MovieNeek Logo" 
+        class="h-7 w-auto opacity-90"
+      >
+    </a>
+    <form action="search.html" method="GET" class="relative">
+      <input
+        type="text"
+        name="query"
+        placeholder="Search..."
+        class="w-full bg-dark text-white px-4 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-primary text-base placeholder-gray-400"
+      >
+      <button type="submit" class="absolute right-3 top-2 text-gray-400 hover:text-primary">
+        <i class="fas fa-search fa-xs"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="md:hidden bottom-nav flex justify-around items-center py-3">
+    <a href="index.html" class="text-gray-400 hover:text-primary flex flex-col items-center text-xs">
+      <i class="fas fa-home fa-sm mb-1"></i>
+      <span>Home</span>
+    </a>
+    <a href="javascript:void(0)" onclick="getRandomMedia()" class="text-gray-400 hover:text-primary flex flex-col items-center text-xs">
+      <i class="fas fa-random fa-sm mb-1"></i>
+      <span>Random</span>
+    </a>
+    <a href="search.html?query=" class="text-gray-400 hover:text-primary flex flex-col items-center text-xs">
+      <i class="fas fa-search fa-sm mb-1"></i>
+      <span>Browse</span>
+    </a>
+    <a href="livetv.html" class="text-gray-400 hover:text-primary flex flex-col items-center text-xs">
+      <i class="fas fa-broadcast-tower fa-sm mb-1"></i>
+      <span>Live TV</span>
+    </a>
+    <a href="https://animeneek.github.io/AnimeNeek" class="text-gray-400 hover:text-primary flex flex-col items-center text-xs">
+      <i class="fas fa-ghost fa-sm mb-1"></i>
+      <span>Anime</span>
+    </a>
+  </nav>
+
+  <!-- Spacer -->
+  <div class="h-24 md:h-20"></div>
+
+  <!-- Scripts -->
+  <script>
+    const TMDB_API_KEY = 'e3afd4c89e3351edad9e875ff7a01f0c';
+
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const query = this.querySelector('input').value.trim();
+        if (query) {
+          window.location.href = `search.html?query=${encodeURIComponent(query)}`;
+        } else {
+          window.location.href = 'search.html?query=';
+        }
+      });
+    });
+
+    async function getRandomMedia() {
+      const mediaType = Math.random() > 0.5 ? 'movie' : 'tv';
+
+      try {
+        const countRes = await fetch(`https://api.themoviedb.org/3/${mediaType}/popular?api_key=${TMDB_API_KEY}`);
+        const countData = await countRes.json();
+        const totalPages = Math.min(countData.total_pages, 500);
+        const randomPage = Math.floor(Math.random() * totalPages) + 1;
+
+        const res = await fetch(`https://api.themoviedb.org/3/${mediaType}/popular?api_key=${TMDB_API_KEY}&page=${randomPage}`);
+        const data = await res.json();
+
+        if (data.results?.length) {
+          const valid = data.results.filter(item => item.id && !item.adult);
+          if (valid.length) {
+            const randomItem = valid[Math.floor(Math.random() * valid.length)];
+            window.location.href = `MNeek/info.html?id=${randomItem.id}&type=${mediaType}`;
+            return;
+          }
+        }
+
+        alert("Could not fetch a random title. Try again.");
+      } catch (err) {
+        console.error("Random fetch error:", err);
+        alert("Failed to fetch random content.");
+      }
+    }
+  </script>
+</body>
+</html>
