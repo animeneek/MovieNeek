@@ -7,7 +7,7 @@
       "Date": "01.10.2025",
       "IMG": "https://thumb.tapecontent.net/thumb/a0Y2adMKzDTxBoX/D9L3XDoweyuklgv.jpg",
       "Sources": [
-        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.com/e/a0Y2adMKzDTxBoX" }
+        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.to/e/a0Y2adMKzDTxBoX" }
       ]
     },
     {
@@ -17,7 +17,7 @@
       "Date": "08.29.2024",
       "IMG": "https://thumb.tapecontent.net/thumb/yrjRVPYWOpT1ABX/8vVqejjoP1I8B7.jpg",
       "Sources": [
-        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.com/e/yrjRVPYWOpT1ABX" }
+        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.to/e/yrjRVPYWOpT1ABX" }
       ]
     },
     {
@@ -27,10 +27,11 @@
       "Date": "08.29.2024",
       "IMG": "https://thumb.tapecontent.net/thumb/yrjRVPYWOpT1ABX/D9L3XDoweyuklgv.jpg",
       "Sources": [
-        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.com/e/yrjRVPYWOpT1ABX" }
+        { "SourceName": "Server 1", "EmbedURL": "https://streamtape.to/e/yrjRVPYWOpT1ABX" }
       ]
     }
 
   ]
 }
+
 
